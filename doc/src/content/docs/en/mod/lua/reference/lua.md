@@ -3271,6 +3271,38 @@ Function `( Mass, Mass ) -> bool`
 
 Function `( Mass, Mass ) -> bool`
 
+## MonGroup
+
+### Bases
+
+No base classes.
+
+### Constructors
+
+No constructors.
+
+### Members
+
+#### is_monster_in_group
+
+Function `( MonGroup, MtypeId ) -> bool`
+
+#### is_valid_monster_group
+
+Function `( MonGroup ) -> bool`
+
+#### get_monsters_from_group
+
+Function `( MonGroup ) -> Vector( MtypeId )`
+
+#### get_random_monster_from_group
+
+Function `( MonGroup ) -> MtypeId`
+
+#### is_animal
+
+Function `( MonGroup ) -> bool`
+
 ## Monster
 
 ### Bases
@@ -6267,6 +6299,10 @@ Function `( Tripoint, Opt( bool ) ) -> Character`
 #### get_npc_at
 
 Function `( Tripoint, Opt( bool ) ) -> Npc`
+
+#### get_monstergroup_overmap_at
+
+Function `( Tripoint ) -> Vector( MonGroup )`
 
 #### choose_adjacent
 

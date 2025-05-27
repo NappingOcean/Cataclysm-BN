@@ -23,9 +23,11 @@
 #include "martialarts.h"
 #include "messages.h"
 #include "monfaction.h"
+#include "mongroup.h"
 #include "monster.h"
 #include "mtype.h"
 #include "npc.h"
+#include "overmapbuffer.h"
 #include "player.h"
 #include "popup.h"
 #include "rng.h"
@@ -998,6 +1000,10 @@ void cata::detail::reg_game_api( sol::state &lua )
         }
         return g->critter_at<npc>( p );
     } );
+
+    luna::set_fx( lib, "get_monstergroup_overmap_at", []( const tripoint &p ){
+            return overmap_buffer.monsters_at( tripoint_abs_omt(p) );
+        });
 
     luna::set_fx( lib, "choose_adjacent", []( const std::string & message,
     sol::optional<bool> allow_vertical ) -> sol::optional<tripoint> {

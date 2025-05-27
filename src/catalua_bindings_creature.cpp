@@ -19,6 +19,7 @@
 #include "field_type.h"
 #include "flag.h"
 #include "flag_trait.h"
+#include "mongroup.h"
 #include "monfaction.h"
 #include "monster.h"
 #include "morale_types.h"
@@ -35,6 +36,7 @@ void cata::detail::reg_creature_family( sol::state &lua )
 {
     reg_creature( lua );
     reg_monster( lua );
+    reg_mongroup( lua );
     reg_character( lua );
     reg_player( lua );
     reg_npc( lua );
@@ -322,6 +324,34 @@ void cata::detail::reg_monster( sol::state &lua )
         SET_FX_T( make_ally, void( const monster & ) );
     }
 #undef UT_CLASS // #define UT_CLASS monster
+}
+
+void cata::detail::reg_mongroup( sol::state &lua )
+{
+#define UT_CLASS mongroup
+    {
+        sol::usertype<UT_CLASS> ut =
+        luna::new_usertype<UT_CLASS>(
+            lua,
+            luna::no_bases,
+            luna::no_constructor
+        );
+
+        luna::set_fx( ut, "is_monster_in_group", []( const mongroup & mons, const mtype_id & mon )-> bool {
+            return MonsterGroupManager::IsMonsterInGroup( mons.type, mon );
+        } );
+        luna::set_fx( ut, "is_valid_monster_group", []( const mongroup & mons )-> bool {
+            return MonsterGroupManager::isValidMonsterGroup( mons.type ); 
+        } );
+        luna::set_fx( ut, "get_monsters_from_group", []( const mongroup & mons )-> std::vector<mtype_id> { 
+            return MonsterGroupManager::GetMonstersFromGroup( mons.type );
+        } );
+        luna::set_fx( ut, "get_random_monster_from_group", []( mongroup & mons )-> mtype_id {
+            return MonsterGroupManager::GetRandomMonsterFromGroup( mons.type ); 
+        } );
+        luna::set_fx( ut, "is_animal", []( mongroup & mons )-> bool { return MonsterGroupManager::is_animal( mons.type ); } );
+    }
+#undef UT_CLASS // #define UT_CLASS mongroup
 }
 
 void cata::detail::reg_character( sol::state &lua )
