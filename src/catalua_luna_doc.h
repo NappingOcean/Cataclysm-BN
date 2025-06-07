@@ -36,6 +36,7 @@ class ma_buff;
 class map;
 class map_stack;
 class material_type;
+class mission;
 class monster;
 class npc;
 class player;
@@ -57,6 +58,7 @@ struct damage_unit;
 struct dealt_damage_instance;
 struct fake_spell;
 struct field_type;
+struct mission_type;
 struct mutation_branch;
 struct npc_opinion;
 struct npc_personality;
@@ -120,6 +122,7 @@ LUNA_VAL( item, "Item" );
 LUNA_VAL( item_stack, "ItemStack" );
 LUNA_VAL( map, "Map" );
 LUNA_VAL( map_stack, "MapStack" );
+LUNA_VAL( mission, "Mission" );
 LUNA_VAL( monster, "Monster" );
 LUNA_VAL( npc, "Npc" );
 LUNA_VAL( npc_opinion, "NpcOpinion" );
@@ -159,6 +162,7 @@ LUNA_ID( json_trait_flag, "JsonTraitFlag" )
 LUNA_ID( ma_buff, "MartialArtsBuff" )
 LUNA_ID( ma_technique, "MartialArtsTechnique" )
 LUNA_ID( material_type, "MaterialType" )
+LUNA_ID( mission_type, "MissionType" )
 LUNA_ID( monfaction, "MonsterFaction" )
 LUNA_ID( morale_type_data, "MoraleTypeData" )
 LUNA_ID( mtype, "Mtype" )

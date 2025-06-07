@@ -3382,6 +3382,198 @@ Function `( MaterialTypeRaw ) -> MaterialTypeId`
 
 Function `( MaterialTypeRaw ) -> string`
 
+## Mission
+
+### Bases
+
+No base classes.
+
+### Constructors
+
+No constructors.
+
+### Members
+
+#### name
+
+Function `( Mission ) -> string`
+
+#### mission_id
+
+Function `( Mission ) -> MissionTypeId`
+
+#### has_deadline
+
+Function `( Mission ) -> bool`
+
+#### get_description
+
+Function `( Mission ) -> string`
+
+#### has_target
+
+Function `( Mission ) -> bool`
+
+#### get_target_abs_omt
+
+Function `( Mission ) -> Tripoint`
+
+#### get_type
+
+Function `( Mission ) -> MissionTypeRaw`
+
+#### has_follow_up
+
+Function `( Mission ) -> bool`
+
+#### get_follow_up
+
+Function `( Mission ) -> MissionTypeId`
+
+#### get_value
+
+Function `( Mission ) -> int`
+
+#### get_id
+
+Function `( Mission ) -> int`
+
+#### get_item_id
+
+Function `( Mission ) -> ItypeId`
+
+#### get_npc_id
+
+Function `( Mission ) -> CharacterId`
+
+#### is_assigned
+
+Function `( Mission ) -> bool`
+
+#### set_target_abs_omt
+
+Function `( Mission, Tripoint )`
+
+#### set_target_npc_id
+
+Function `( Mission, CharacterId )`
+
+#### assign
+
+Function `( Mission, Avatar )`
+
+#### is_complete
+
+Function `( Mission, CharacterId ) -> bool`
+
+#### has_failed
+
+Function `( Mission ) -> bool`
+
+#### find
+
+Function `( int ) -> Mission`
+
+#### add_existing
+
+Function `( Mission )`
+
+## MissionTypeId
+
+### Bases
+
+No base classes.
+
+### Constructors
+
+#### `MissionTypeId.new()`
+
+#### `MissionTypeId.new( MissionTypeId )`
+
+#### `MissionTypeId.new( string )`
+
+### Members
+
+#### obj
+
+Function `( MissionTypeId ) -> MissionTypeRaw`
+
+#### implements_int_id
+
+Function `() -> bool`
+
+#### is_null
+
+Function `( MissionTypeId ) -> bool`
+
+#### is_valid
+
+Function `( MissionTypeId ) -> bool`
+
+#### str
+
+Function `( MissionTypeId ) -> string`
+
+#### NULL_ID
+
+Function `() -> MissionTypeId`
+
+#### __tostring
+
+Function `( MissionTypeId ) -> string`
+
+#### serialize
+
+Function `( MissionTypeId, <cppval: 7JsonOut > )`
+
+#### deserialize
+
+Function `( MissionTypeId, <cppval: 6JsonIn > )`
+
+## MissionTypeRaw
+
+### Bases
+
+No base classes.
+
+### Constructors
+
+No constructors.
+
+### Members
+
+#### id
+
+Variable of type `MissionTypeId`
+
+#### item_id
+
+Variable of type `ItypeId`
+
+#### item_count
+
+Variable of type `int`
+
+#### monster_type
+
+Variable of type `MtypeId`
+
+#### monster_species
+
+Variable of type `SpeciesTypeId`
+
+#### monster_kill_goal
+
+Variable of type `int`
+
+#### follow_up
+
+Variable of type `MissionTypeId`
+
+#### create
+
+Function `( MissionTypeRaw, CharacterId ) -> Mission`
+
 ## Monster
 
 ### Bases

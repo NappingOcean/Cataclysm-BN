@@ -933,6 +933,61 @@ MaterialTypeRaw = {}
 ---@return MaterialTypeRaw
 function MaterialTypeRaw.new() end
 
+---@class Mission
+---@field add_existing fun(arg1: Mission)
+---@field assign fun(arg1: Mission, arg2: Avatar)
+---@field find fun(arg1: integer): Mission
+---@field get_description fun(arg1: Mission): string
+---@field get_follow_up fun(arg1: Mission): MissionTypeId
+---@field get_id fun(arg1: Mission): integer
+---@field get_item_id fun(arg1: Mission): ItypeId
+---@field get_npc_id fun(arg1: Mission): CharacterId
+---@field get_target_abs_omt fun(arg1: Mission): Tripoint
+---@field get_type fun(arg1: Mission): MissionTypeRaw
+---@field get_value fun(arg1: Mission): integer
+---@field has_deadline fun(arg1: Mission): boolean
+---@field has_failed fun(arg1: Mission): boolean
+---@field has_follow_up fun(arg1: Mission): boolean
+---@field has_target fun(arg1: Mission): boolean
+---@field is_assigned fun(arg1: Mission): boolean
+---@field is_complete fun(arg1: Mission, arg2: CharacterId): boolean
+---@field mission_id fun(arg1: Mission): MissionTypeId
+---@field name fun(arg1: Mission): string
+---@field set_target_abs_omt fun(arg1: Mission, arg2: Tripoint)
+---@field set_target_npc_id fun(arg1: Mission, arg2: CharacterId)
+Mission = {}
+---@return Mission
+function Mission.new() end
+
+---@class MissionTypeId
+---@field NULL_ID fun(): MissionTypeId
+---@field implements_int_id fun(): boolean
+---@field is_null fun(arg1: MissionTypeId): boolean
+---@field is_valid fun(arg1: MissionTypeId): boolean
+---@field obj fun(arg1: MissionTypeId): MissionTypeRaw
+---@field str fun(arg1: MissionTypeId): string
+---@field serialize fun(arg1: MissionTypeId)
+---@field deserialize fun(arg1: MissionTypeId)
+---@field __tostring fun(arg1: MissionTypeId): string
+MissionTypeId = {}
+---@return MissionTypeId
+---@overload fun(arg1: MissionTypeId): MissionTypeId
+---@overload fun(arg1: string): MissionTypeId
+function MissionTypeId.new() end
+
+---@class MissionTypeRaw
+---@field follow_up MissionTypeId
+---@field id MissionTypeId
+---@field item_count integer
+---@field item_id ItypeId
+---@field monster_kill_goal integer
+---@field monster_species SpeciesTypeId
+---@field monster_type MtypeId
+---@field create fun(arg1: MissionTypeRaw, arg2: CharacterId): Mission
+MissionTypeRaw = {}
+---@return MissionTypeRaw
+function MissionTypeRaw.new() end
+
 ---@class Monster : Creature
 ---@field anger integer
 ---@field death_drops boolean

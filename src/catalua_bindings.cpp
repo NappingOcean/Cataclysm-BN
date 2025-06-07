@@ -1382,6 +1382,7 @@ void cata::reg_all_bindings( sol::state &lua )
     mod_mutation_branch( lua );
     reg_magic( lua );
     reg_recipe( lua );
+    reg_mission( lua );
     reg_coords_library( lua );
     reg_constants( lua );
     reg_hooks_examples( lua );

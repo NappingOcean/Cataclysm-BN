@@ -16,6 +16,7 @@
 #include "point.h"
 #include "translations.h"
 #include "type_id.h"
+#include "catalua_type_operators.h"
 
 class Creature;
 class JsonArray;
@@ -201,6 +202,7 @@ struct mission_type {
         // The untranslated name of the mission
         translation name = to_translation( "Bugged mission type" );
     public:
+        LUA_TYPE_OPS(mission_type, id);
         translation description;
         // The basic goal type
         mission_goal goal = mission_goal::MGOAL_NULL;
