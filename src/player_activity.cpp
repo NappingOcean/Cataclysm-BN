@@ -584,6 +584,8 @@ void player_activity::do_turn( player &p )
     }
 
     if( *this && complete() ) {
+        // Backup the id as a string.
+        std::string finished_act_id = id().str();
         // Note: For some activities "finish" is a misnomer; that's why we explicitly check if the
         // type is ACT_NULL below.
         if( actor ) {
@@ -594,6 +596,10 @@ void player_activity::do_turn( player &p )
                 set_to_null();
             }
         }
+        cata::run_hooks( "on_activity_finish", [ &, finished_act_id ]( auto & params ) {
+            params["player"] = &p;
+            params["activity_id"] = finished_act_id;
+        } );
         for( Character *npc : assistants() ) {
             npc->cancel_activity();
         }
