@@ -91,6 +91,7 @@
 #include "gates.h"
 #include "harvest.h"
 #include "help.h"
+#include "hunting_data.h"
 #include "iexamine.h"
 #include "init.h"
 #include "input.h"
@@ -1527,6 +1528,10 @@ bool game::do_turn()
     }
     if( calendar::once_every( 1_days ) ) {
         overmap_buffer.process_mongroups();
+        // Daily hunting population recovery
+        hunting::daily_population_recovery();
+        // Track player presence for hunting success penalty
+        hunting::update_player_presence( u.global_omt_location() );
     }
 
     // Move hordes every 2.5 min

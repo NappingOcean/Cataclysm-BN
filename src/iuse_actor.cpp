@@ -45,6 +45,7 @@
 #include "game.h"
 #include "game_inventory.h"
 #include "handle_liquid.h"
+#include "hunting_data.h"
 #include "iexamine.h"
 #include "int_id.h"
 #include "inventory.h"
@@ -6545,3 +6546,67 @@ auto iuse_flowerpot_collect::clone() const -> std::unique_ptr<iuse_actor>
 {
     return std::make_unique<iuse_flowerpot_collect>( *this );
 }
+
+// -------------------
+// Hunting Snare Actors
+
+std::unique_ptr<iuse_actor> deploy_snare_actor::clone() const
+{
+    return std::make_unique<deploy_snare_actor>( *this );
+}
+
+void deploy_snare_actor::info( const item &, std::vector<iteminfo> &dump ) const
+{
+    dump.emplace_back( "DESCRIPTION",
+                       _( "Can be <info>activated</info> to deploy as a hunting snare.  "
+                          "Add bait to increase catch chance." ) );
+}
+
+void deploy_snare_actor::load( const JsonObject &obj )
+{
+    furn_type = furn_str_id( obj.get_string( "furn_type" ) );
+    // Use default hunting data for now
+    hunting_data_id = snaring_hunting_data_id( "default_hunting" );
+}
+
+int deploy_snare_actor::use( player &p, item &it, bool t, const tripoint &pos ) const
+{
+    if( t ) {
+        return 0;
+    }
+
+    if( p.is_mounted() ) {
+        p.add_msg_if_player( m_info, _( "You cannot do that while mounted." ) );
+        return 0;
+    }
+
+    tripoint pnt = pos;
+    if( const std::optional<tripoint> pnt_ = choose_adjacent( _( "Deploy snare where?" ) ) ) {
+        pnt = *pnt_;
+    } else {
+        return 0;
+    }
+
+    if( pnt == p.pos() ) {
+        p.add_msg_if_player( m_info, _( "You can't deploy a snare on yourself." ) );
+        return 0;
+    }
+
+    map &here = get_map();
+    if( here.has_furn( pnt ) ) {
+        p.add_msg_if_player( m_info, _( "There is already furniture at that location." ) );
+        return 0;
+    }
+
+    if( here.impassable( pnt ) ) {
+        p.add_msg_if_player( m_info, _( "You can't deploy a snare there." ) );
+        return 0;
+    }
+
+    here.furn_set( pnt, furn_type );
+    
+    p.add_msg_if_player( m_info, _( "You deploy the hunting snare." ) );
+    p.mod_moves( to_turns<int>( 3_seconds ) );
+    return 1; // Consume the snare item
+}
+

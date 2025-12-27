@@ -1,0 +1,65 @@
+[
+  {
+    "type": "furniture",
+    "id": "f_snare_empty",
+    "name": "empty hunting snare",
+    "description": "A deployed hunting snare, ready to be baited.  Animals might get caught in this.",
+    "symbol": "^",
+    "color": "brown",
+    "move_cost_mod": 2,
+    "coverage": 10,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT", "TINY" ],
+    "examine_action": "bait_snare",
+    "deployed_item": "hunting_snare",
+    "bash": {
+      "str_min": 4,
+      "str_max": 12,
+      "sound": "crunch!",
+      "sound_fail": "whack!",
+      "items": [ { "item": "hunting_snare", "count": 1 } ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "f_snare_set",
+    "name": "baited hunting snare",
+    "description": "A hunting snare baited and ready.  Now we wait.",
+    "symbol": "^",
+    "color": "light_green",
+    "move_cost_mod": 2,
+    "coverage": 10,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT", "TINY", "CONTAINER" ],
+    "examine_action": "none",
+    "deployed_item": "hunting_snare",
+    "bash": {
+      "str_min": 4,
+      "str_max": 12,
+      "sound": "crunch!",
+      "sound_fail": "whack!",
+      "items": [ { "item": "hunting_snare", "count": 1 } ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "f_snare_closed",
+    "name": "triggered hunting snare",
+    "description": "A hunting snare that has been triggered.  Check it to see what you caught!",
+    "symbol": "*",
+    "color": "yellow",
+    "move_cost_mod": 2,
+    "coverage": 10,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT", "TINY", "CONTAINER" ],
+    "examine_action": "harvest_snare",
+    "deployed_item": "hunting_snare",
+    "bash": {
+      "str_min": 4,
+      "str_max": 12,
+      "sound": "crunch!",
+      "sound_fail": "whack!",
+      "items": [ { "item": "hunting_snare", "count": 1 } ]
+    }
+  }
+]

@@ -9958,6 +9958,50 @@ detached_ptr<item> item::process_fake_smoke( detached_ptr<item> &&self, player *
     return std::move( self );
 }
 
+detached_ptr<item> item::process_fake_snare( detached_ptr<item> &&self, player * /*carrier*/,
+        const tripoint &pos )
+{
+    if( !self ) {
+        return std::move( self );
+    }
+    map &here = get_map();
+
+    // Check if trap furniture still exists and is in "_set" state
+    const furn_id furn_at = here.furn( pos );
+    std::string furn_str = furn_at.id().str();
+
+    // If furniture is not in _set state, remove fake item
+    if( furn_str.length() < 4 || furn_str.substr( furn_str.length() - 4 ) != "_set" ) {
+        return detached_ptr<item>();
+    }
+
+    // Player proximity penalty: if player is in same OMT, accumulate penalty
+    const tripoint_abs_omt trap_omt = project_to<coords::omt>( tripoint_abs_ms( pos ) );
+    const tripoint_abs_omt player_omt = get_avatar().global_omt_location();
+
+    if( trap_omt == player_omt ) {
+        // Player is in same OMT: accumulate penalty (max 50%)
+        int current_penalty = self->get_var( "proximity_penalty", 0 );
+        current_penalty = std::min( 50, current_penalty + 1 );
+        self->set_var( "proximity_penalty", current_penalty );
+    }
+
+    // Check if it's time to trigger the trap
+    if( self->item_counter == 0 ) {
+        // Get base furniture name to construct _closed furniture
+        std::string base_furn = self->get_var( "base_furn", furn_str.substr( 0,
+                                               furn_str.length() - 4 ) );
+
+        // Trigger the trap - change to _closed state
+        here.furn_set( pos, furn_str_id( base_furn + "_closed" ) );
+
+        // Deactivate so it stops processing
+        self->deactivate();
+    }
+
+    return std::move( self );
+}
+
 detached_ptr<item> item::process_litcig( detached_ptr<item> &&self, player *carrier,
         const tripoint &pos )
 {
@@ -10546,6 +10590,12 @@ detached_ptr<item> item::process_internal( detached_ptr<item> &&self, player *ca
     }
     if( self->has_flag( flag_FAKE_MILL ) ) {
         self = process_fake_mill( std::move( self ), carrier, pos );
+        if( !self ) {
+            return std::move( self );
+        }
+    }
+    if( self->has_flag( flag_FAKE_SNARE ) ) {
+        self = process_fake_snare( std::move( self ), carrier, pos );
         if( !self ) {
             return std::move( self );
         }

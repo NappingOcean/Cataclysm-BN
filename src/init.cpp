@@ -49,6 +49,7 @@
 #include "flag_trait.h"
 #include "gates.h"
 #include "harvest.h"
+#include "hunting_data.h"
 #include "item_action.h"
 #include "item_category.h"
 #include "item_factory.h"
@@ -456,10 +457,14 @@ void DynamicDataLoader::initialize()
     add( "SPELL", &spell_type::load_spell );
     add( "clothing_mod", &clothing_mods::load );
     add( "ter_furn_transform", &ter_furn_transform::load_transform );
+    add( "snaring_hunting_data", []( const JsonObject & jo, const std::string & src ) {
+        snaring_hunting_data::load_hunting_data( jo, src );
+    } );
     add( "event_transformation", &event_transformation::load_transformation );
     add( "event_statistic", &event_statistic::load_statistic );
     add( "score", &score::load_score );
     add( "achievement", &achievement::load_achievement );
+    add( "snaring_hunting_data", &snaring_hunting_data::load_hunting_data );
 #if defined(TILES)
     add( "mod_tileset", &load_mod_tileset );
 #else
@@ -578,6 +583,7 @@ void DynamicDataLoader::unload_data()
     item_controller->reset();
     json_flag::reset();
     json_trait_flag::reset();
+    snaring_hunting_data::reset();
     MapExtras::reset();
     mapgen_palette::reset();
     materials::reset();

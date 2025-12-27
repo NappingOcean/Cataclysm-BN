@@ -1557,6 +1557,23 @@
     "context": [  ]
   },
   {
+    "id": "FAKE_SNARE",
+    "type": "json_flag",
+    "context": [  ]
+  },
+  {
+    "id": "BAIT_SMALL_GAME",
+    "type": "json_flag",
+    "context": [ "COMESTIBLE" ],
+    "info": "This item can be used as <info>bait for small game</info> in hunting snares."
+  },
+  {
+    "id": "BAIT_LARGE_GAME",
+    "type": "json_flag",
+    "context": [ "COMESTIBLE" ],
+    "info": "This item can be used as <info>bait for large game</info> in hunting traps."
+  },
+  {
     "id": "FELINE",
     "type": "json_flag",
     "context": [  ]

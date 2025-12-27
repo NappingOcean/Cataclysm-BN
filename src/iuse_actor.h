@@ -15,6 +15,7 @@
 #include "enums.h"
 #include "explosion.h"
 #include "game_constants.h"
+#include "hunting_data.h"
 #include "iuse.h"
 #include "ret_val.h"
 #include "string_id.h"
@@ -1470,3 +1471,22 @@ class iuse_flowerpot_collect final : public iuse_actor
                                                const iuse_flowerpot_plant *actor,
                                                const itype_id &seed_type );
 };
+
+/**
+ * Hunting snare actor for baiting and catching prey
+ */
+class deploy_snare_actor : public iuse_actor
+{
+    public:
+        furn_str_id furn_type;
+        snaring_hunting_data_id hunting_data_id;
+
+        deploy_snare_actor() : iuse_actor( "deploy_snare" ) {}
+
+        ~deploy_snare_actor() override = default;
+        void load( const JsonObject &obj ) override;
+        int use( player &, item &, bool, const tripoint & ) const override;
+        std::unique_ptr<iuse_actor> clone() const override;
+        void info( const item &, std::vector<iteminfo> & ) const override;
+};
+

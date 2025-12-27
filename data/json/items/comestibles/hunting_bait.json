@@ -1,0 +1,19 @@
+[
+  {
+    "id": "test_bait",
+    "type": "COMESTIBLE",
+    "comestible_type": "FOOD",
+    "name": { "str": "test hunting bait" },
+    "description": "A simple bait for testing hunting snares.  Attracts small game.",
+    "weight": "50 g",
+    "volume": "100 ml",
+    "price": 50,
+    "price_postapoc": 10,
+    "material": [ "veggy" ],
+    "symbol": "*",
+    "color": "yellow",
+    "spoils_in": "2 days",
+    "calories": 50,
+    "flags": [ "BAIT_SMALL_GAME" ]
+  }
+]

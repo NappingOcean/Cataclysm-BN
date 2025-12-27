@@ -1,0 +1,17 @@
+[
+  {
+    "id": "default_hunting",
+    "type": "snaring_hunting_data",
+    "results": [
+      {
+        "habitat": "forest",
+        "bait_flags": [ "BAIT_SMALL_GAME" ],
+        "prey": [
+          { "prey": "mon_rabbit", "weight": 10 },
+          { "prey": "mon_squirrel", "weight": 8 },
+          { "prey": "mon_chipmunk", "weight": 5 }
+        ]
+      }
+    ]
+  }
+]

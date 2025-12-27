@@ -54,6 +54,7 @@
 #include "game_inventory.h"
 #include "handle_liquid.h"
 #include "harvest.h"
+#include "hunting_data.h"
 #include "input.h"
 #include "int_id.h"
 #include "inventory.h"
@@ -6497,6 +6498,166 @@ void iexamine::smoker_options( player &p, const tripoint &examp )
     }
 }
 
+void iexamine::harvest_snare( player &p, const tripoint &examp )
+{
+    map &here = get_map();
+    const furn_id furn_at = here.furn( examp );
+
+    // Check if this is a triggered trap (must end with "_closed")
+    std::string furn_str = furn_at.id().str();
+    if( furn_str.length() < 7 || furn_str.substr( furn_str.length() - 7 ) != "_closed" ) {
+        add_msg( m_info, _( "This trap hasn't been triggered." ) );
+        return;
+    }
+
+    map_stack items_here = here.i_at( examp );
+    if( items_here.empty() ) {
+        debugmsg( "f_snare_closed was empty!" );
+        here.furn_set( examp, furn_str_id( "f_snare_empty" ) );
+        return;
+    }
+
+    // Find the fake tracking item (similar to smoking_rack pattern)
+    item *fake_item = nullptr;
+    std::vector<flag_id> bait_flags;
+    std::string base_furn;
+    int proximity_penalty = 0;
+    for( item * const &it : items_here ) {
+        if( it->typeId() == itype_id( "fake_snare_bait" ) ) {
+            fake_item = it;
+            // Extract bait flags for success calculation
+            for( const flag_id &flag : it->get_flags() ) {
+                if( flag.str().find( "BAIT_" ) == 0 ) {
+                    bait_flags.push_back( flag );
+                }
+            }
+            // Get base furniture name (default to deriving from current furniture if not found)
+            base_furn = it->get_var( "base_furn", furn_str.substr( 0, furn_str.length() - 7 ) );
+            // Get proximity penalty accumulated during trap operation
+            proximity_penalty = it->get_var( "proximity_penalty", 0 );
+            break;
+        }
+    }
+
+    if( !fake_item ) {
+        debugmsg( "f_snare_closed had no fake_snare_bait item!" );
+        here.furn_set( examp, furn_str_id( "f_snare_empty" ) );
+        return;
+    }
+
+    // Calculate time elapsed since trap was set
+    const time_duration elapsed = calendar::turn - fake_item->birthday();
+
+    // Check if snare caught anything (apply proximity penalty)
+    hunting::snare_result result = hunting::check_snare( examp, bait_flags, elapsed, p,
+                                   proximity_penalty );
+
+    // Remove fake tracking item
+    for( auto it = items_here.begin(); it != items_here.end(); ) {
+        if( ( *it )->typeId() == itype_id( "fake_snare_bait" ) ) {
+            detached_ptr<item> det;
+            it = items_here.erase( it, &det );
+            break;
+        } else {
+            ++it;
+        }
+    }
+
+    // Process results
+    if( result.success && result.prey_id.is_valid() ) {
+        add_msg( m_good, result.message );
+        // Create corpse of caught creature
+        detached_ptr<item> corpse = item::make_corpse( result.prey_id, calendar::turn );
+        here.add_item_or_charges( examp, std::move( corpse ) );
+    } else {
+        add_msg( m_neutral, result.message );
+    }
+
+    // Reset furniture to empty trap using stored base name
+    here.furn_set( examp, furn_str_id( base_furn + "_empty" ) );
+    p.mod_moves( to_turns<int>( 1_seconds ) );
+}
+
+void iexamine::bait_snare( player &p, const tripoint &examp )
+{
+    map &here = get_map();
+    const furn_id furn_at = here.furn( examp );
+    std::string furn_str = furn_at.id().str();
+
+    // Verify this is an empty snare
+    if( furn_str.length() < 6 || furn_str.substr( furn_str.length() - 6 ) != "_empty" ) {
+        add_msg( m_info, _( "There's no empty trap here." ) );
+        return;
+    }
+
+    // Menu for options
+    uilist amenu;
+    amenu.text = _( "Snare options:" );
+    amenu.addentry( 0, true, 'b', _( "Add bait" ) );
+    amenu.addentry( 1, true, 't', _( "Take down the snare" ) );
+    amenu.query();
+
+    if( amenu.ret == 1 ) {
+        // Take down option - recover the snare item
+        deployed_furniture( p, examp );
+        return;
+    }
+
+    if( amenu.ret != 0 ) {
+        return;
+    }
+
+    // Find bait in inventory
+    std::vector<item *> bait_items;
+    p.visit_items( [&bait_items]( item * it, item * ) {
+        if( it->has_flag( flag_BAIT_SMALL_GAME ) || it->has_flag( flag_BAIT_LARGE_GAME ) ) {
+            bait_items.push_back( it );
+            return VisitResponse::SKIP;
+        }
+        return VisitResponse::NEXT;
+    } );
+
+    if( bait_items.empty() ) {
+        add_msg( m_info, _( "You don't have any bait." ) );
+        return;
+    }
+
+    // Simple selection - just use first available bait
+    item *selected_bait = bait_items[0];
+    std::string bait_name = selected_bait->tname();
+
+    // Extract bait flags
+    std::vector<flag_id> bait_flags;
+    if( selected_bait->has_flag( flag_BAIT_SMALL_GAME ) ) {
+        bait_flags.push_back( flag_BAIT_SMALL_GAME );
+    }
+    if( selected_bait->has_flag( flag_BAIT_LARGE_GAME ) ) {
+        bait_flags.push_back( flag_BAIT_LARGE_GAME );
+    }
+
+    // Get base furniture name
+    std::string base_name = furn_str.substr( 0, furn_str.length() - 6 );
+
+    // Create fake tracker item
+    detached_ptr<item> fake = item::spawn( "fake_snare_bait", calendar::turn );
+    fake->activate();
+    fake->set_counter( to_turns<int>( time_duration::from_hours( rng( 4, 8 ) ) ) );
+    for( const flag_id &flag : bait_flags ) {
+        fake->set_flag( flag );
+    }
+    fake->set_var( "base_furn", base_name );
+
+    // Add fake item and change furniture
+    here.add_item( examp, std::move( fake ) );
+    here.furn_set( examp, furn_str_id( base_name + "_set" ) );
+
+    // Consume bait
+    p.use_charges( selected_bait->typeId(), 1 );
+
+    add_msg( m_good, _( "You bait the snare with %s." ), bait_name );
+    p.mod_moves( -to_moves<int>( 2_seconds ) );
+}
+
 void iexamine::open_safe( player &, const tripoint &examp )
 {
     add_msg( m_info, _( "You open the unlocked safe." ) );
@@ -6677,6 +6838,8 @@ iexamine_function iexamine_function_from_string( const std::string &function_nam
             { "autodoc", &iexamine::autodoc },
             { "quern_examine", &iexamine::quern_examine },
             { "smoker_options", &iexamine::smoker_options },
+            { "harvest_snare", &iexamine::harvest_snare },
+            { "bait_snare", &iexamine::bait_snare },
             { "open_safe", &iexamine::open_safe },
             { "workbench", &iexamine::workbench },
             { "dimensional_portal", &iexamine::dimensional_portal },
