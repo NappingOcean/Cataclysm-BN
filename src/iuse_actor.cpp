@@ -6604,7 +6604,7 @@ int deploy_snare_actor::use( player &p, item &it, bool t, const tripoint &pos ) 
     }
 
     here.furn_set( pnt, furn_type );
-    
+
     p.add_msg_if_player( m_info, _( "You deploy the hunting snare." ) );
     p.mod_moves( to_turns<int>( 3_seconds ) );
     return 1; // Consume the snare item
