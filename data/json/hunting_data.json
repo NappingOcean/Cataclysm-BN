@@ -1,0 +1,24 @@
+[
+  {
+    "type": "hunting_data",
+    "id": "default_hunting",
+    "habitats": {
+      "forest": {
+        "SMALL_GAME": [
+          { "prey": "mon_squirrel", "weight": 100 },
+          { "prey": "mon_rabbit", "weight": 80 },
+          { "prey": "mon_chipmunk", "weight": 60 }
+        ],
+        "LARGE_GAME": [ { "prey": "mon_deer", "weight": 40 }, { "prey": "mon_fox_red", "weight": 30 } ]
+      },
+      "field": {
+        "SMALL_GAME": [ { "prey": "mon_rabbit", "weight": 120 }, { "prey": "mon_groundhog", "weight": 80 } ],
+        "LARGE_GAME": [ { "prey": "mon_deer", "weight": 50 } ]
+      },
+      "swamp": {
+        "SMALL_GAME": [ { "prey": "mon_muskrat", "weight": 100 }, { "prey": "mon_otter", "weight": 60 } ],
+        "LARGE_GAME": [ { "prey": "mon_beaver", "weight": 70 } ]
+      }
+    }
+  }
+]

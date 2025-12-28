@@ -1557,6 +1557,24 @@
     "context": [  ]
   },
   {
+    "id": "FAKE_SNARE",
+    "type": "json_flag",
+    "info": "This item is a fake tracker for hunting snares.",
+    "context": [  ]
+  },
+  {
+    "id": "BAIT_SMALL_GAME",
+    "type": "json_flag",
+    "info": "Can be used as bait for small game in hunting snares.",
+    "context": [  ]
+  },
+  {
+    "id": "BAIT_LARGE_GAME",
+    "type": "json_flag",
+    "info": "Can be used as bait for large game in hunting snares.",
+    "context": [  ]
+  },
+  {
     "id": "FELINE",
     "type": "json_flag",
     "context": [  ]

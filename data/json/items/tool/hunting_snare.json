@@ -1,0 +1,48 @@
+[
+  {
+    "id": "hunting_snare",
+    "type": "GENERIC",
+    "category": "tools",
+    "name": { "str": "hunting snare kit" },
+    "description": "Components for building a wire snare to catch small game. Use construction menu (*) to place it.",
+    "weight": "250 g",
+    "volume": "500 ml",
+    "price": 500,
+    "price_postapoc": 50,
+    "material": [ "steel" ],
+    "symbol": "^",
+    "color": "light_gray"
+  },
+  {
+    "id": "fake_snare_bait",
+    "type": "TOOL",
+    "category": "other",
+    "name": { "str": "fake snare tracker", "str_pl": "fake snare trackers" },
+    "description": "This is a fake item used to track snare status. If you have this, it's a bug.",
+    "weight": "1 g",
+    "volume": "1 ml",
+    "price": 0,
+    "price_postapoc": 0,
+    "material": [ "wood" ],
+    "symbol": "*",
+    "color": "white",
+    "flags": [ "TRADER_AVOID", "FAKE_SNARE" ]
+  },
+  {
+    "id": "test_bait",
+    "type": "COMESTIBLE",
+    "comestible_type": "FOOD",
+    "name": { "str": "test bait" },
+    "description": "Testing bait for hunting snares.",
+    "weight": "100 g",
+    "volume": "250 ml",
+    "price": 100,
+    "material": [ "flesh" ],
+    "symbol": "%",
+    "color": "brown",
+    "spoils_in": "3 days",
+    "flags": [ "BAIT_SMALL_GAME" ],
+    "calories": 50,
+    "fun": -5
+  }
+]

@@ -1,0 +1,61 @@
+[
+  {
+    "type": "furniture",
+    "id": "f_snare_empty",
+    "name": "empty hunting snare",
+    "description": "A wire snare ready to be baited.",
+    "symbol": "^",
+    "color": "light_gray",
+    "move_cost_mod": 0,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT" ],
+    "examine_action": "bait_snare",
+    "deconstruct": { "items": [ { "item": "wire", "count": 8 }, { "item": "stick", "count": 1 } ] },
+    "bash": {
+      "str_min": 4,
+      "str_max": 12,
+      "sound": "snap!",
+      "sound_fail": "whack!",
+      "items": [ { "item": "scrap", "count": [ 1, 2 ] } ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "f_snare_set",
+    "name": "baited hunting snare",
+    "description": "A wire snare with bait, waiting for prey.",
+    "symbol": "^",
+    "color": "yellow",
+    "move_cost_mod": 0,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM" ],
+    "deconstruct": { "items": [ { "item": "wire", "count": 8 }, { "item": "stick", "count": 1 } ] },
+    "bash": {
+      "str_min": 4,
+      "str_max": 12,
+      "sound": "snap!",
+      "sound_fail": "whack!",
+      "items": [ { "item": "scrap", "count": [ 1, 2 ] } ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "f_snare_closed",
+    "name": "triggered hunting snare",
+    "description": "A hunting snare that has been triggered. Check it to see what you caught.",
+    "symbol": "^",
+    "color": "green",
+    "move_cost_mod": 0,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM" ],
+    "examine_action": "harvest_snare",
+    "deconstruct": { "items": [ { "item": "wire", "count": 8 }, { "item": "stick", "count": 1 } ] },
+    "bash": {
+      "str_min": 4,
+      "str_max": 12,
+      "sound": "snap!",
+      "sound_fail": "whack!",
+      "items": [ { "item": "scrap", "count": [ 1, 2 ] } ]
+    }
+  }
+]

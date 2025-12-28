@@ -1,0 +1,92 @@
+#pragma once
+
+#include <map>
+#include <string>
+#include <vector>
+
+#include "calendar.h"
+#include "coordinates.h"
+#include "int_id.h"
+#include "mtype.h"
+#include "string_id.h"
+#include "type_id.h"
+
+class Character;
+class JsonObject;
+class JsonOut;
+class player;
+
+namespace hunting
+{
+
+// Result of a snare check
+struct snare_result {
+    bool success = false;
+    mtype_id prey_id;
+    std::string message;
+};
+
+// Single prey entry with mtype_id and spawn weight
+struct prey_entry {
+    mtype_id prey;
+    int weight = 100;
+
+    void deserialize( const JsonObject &jo );
+};
+
+// Habitat-specific prey data
+struct habitat_prey_data {
+    std::map<std::string, std::vector<prey_entry>> prey_types; // "SMALL_GAME" -> prey list
+
+    void deserialize( const JsonObject &jo );
+};
+
+// Main hunting data structure
+struct snaring_hunting_data {
+    string_id<snaring_hunting_data> id;
+    std::map<std::string, habitat_prey_data> habitats; // ter_str_id -> prey data
+
+    bool was_loaded = false;
+    void load( const JsonObject &jo, const std::string &src );
+    void deserialize( const JsonObject &jo );
+    void check() const;
+    static void load_hunting_data( const JsonObject &jo, const std::string &src );
+    static void reset();
+    static void check_consistency();
+    static const std::vector<snaring_hunting_data> &get_all();
+};
+
+using snaring_hunting_data_id = string_id<snaring_hunting_data>;
+
+// OMT population tracking
+class omt_population_tracker
+{
+    public:
+        struct omt_data {
+            int population = 100;
+            time_point last_visit;
+            time_point last_recovery;
+        };
+        std::map<tripoint_abs_omt, omt_data> omt_populations;
+
+        void record_visit( const tripoint &pos );
+        void apply_catch_penalty( const tripoint &pos );
+        int get_population( const tripoint &pos ) const;
+        void process_recovery();
+        void serialize( JsonOut &json ) const;
+        void deserialize( const JsonObject &jo );
+};
+
+omt_population_tracker &get_population_tracker();
+
+// Extract bait types from item's BAIT_XXX flags
+std::vector<std::string> extract_bait_types( const item *bait_item );
+
+// Main hunting functions
+snare_result check_snare( const tripoint &pos, const std::vector<std::string> &bait_flags_str,
+                          const player &p, int proximity_penalty );
+
+double calculate_skill_multiplier( const player &p );
+int calculate_presence_penalty( const tripoint &pos );
+
+} // namespace hunting
