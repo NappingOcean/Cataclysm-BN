@@ -173,6 +173,7 @@ static const skill_id skill_fabrication( "fabrication" );
 static const skill_id skill_firstaid( "firstaid" );
 static const skill_id skill_mechanics( "mechanics" );
 static const skill_id skill_survival( "survival" );
+static const skill_id skill_trapping( "trapping" );
 
 static const ter_str_id t_dimensional_portal( "t_dimensional_portal" );
 static const ter_str_id t_web_bridge( "t_web_bridge" );
@@ -6677,8 +6678,12 @@ void iexamine::harvest_snare( player &p, const tripoint &examp )
         // Create corpse of caught creature
         detached_ptr<item> corpse = item::make_corpse( result.prey_id, calendar::turn );
         here.add_item_or_charges( examp, std::move( corpse ) );
+        p.practice( skill_trapping, 25 );
+        p.practice( skill_survival, 12 );
     } else {
         add_msg( m_neutral, result.message );
+        p.practice( skill_trapping, 5 );
+        p.practice( skill_survival, 2 );
     }
 
     // Reset furniture to empty trap
