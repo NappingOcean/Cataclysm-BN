@@ -20,6 +20,7 @@
 #include "enum_conversions.h"
 #include "faction.h"
 #include "hash_utils.h"
+#include "hunting_data.h"
 #include "int_id.h"
 #include "json.h"
 #include "kill_tracker.h"
@@ -111,6 +112,9 @@ void game::serialize( std::ostream &fout )
     json.member( "achievements_tracker", *achievements_tracker_ptr );
 
     json.member( "token_provider", *token_provider_ptr );
+
+    json.member( "hunting_population_tracker" );
+    hunting::get_population_tracker().serialize( json );
 
     json.member( "safe_references" );
     json.start_object();
@@ -253,6 +257,11 @@ void game::unserialize( std::istream &fin )
             }
 
             kill_tracker_ptr->reset( kills, npc_kills );
+        }
+
+        if( data.has_object( "hunting_population_tracker" ) ) {
+            JsonObject hunting_obj = data.get_object( "hunting_population_tracker" );
+            hunting::get_population_tracker().deserialize( hunting_obj );
         }
 
         if( data.has_object( "safe_references" ) ) {
