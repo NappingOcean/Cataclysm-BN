@@ -6498,6 +6498,23 @@ void iexamine::smoker_options( player &p, const tripoint &examp )
     }
 }
 
+void iexamine::hunting_snare( player &p, const tripoint &examp )
+{
+    map &here = get_map();
+    const furn_id furn_at_pos = here.furn( examp );
+    const std::string furn_str = furn_at_pos.id().str();
+
+    if( furn_str.ends_with( "_empty" ) ) {
+        bait_snare( p, examp );
+    } else if( furn_str.ends_with( "_set" ) ) {
+        add_msg( _( "You should stay away from the trap for animals to approach." ) );
+    } else if( furn_str.ends_with( "_closed" ) ) {
+        harvest_snare( p, examp );
+    } else {
+        debugmsg( "hunting_snare called on unexpected furniture: %s", furn_str );
+    }
+}
+
 void iexamine::bait_snare( player &p, const tripoint &examp )
 {
     map &here = get_map();
@@ -6849,8 +6866,7 @@ iexamine_function iexamine_function_from_string( const std::string &function_nam
             { "autodoc", &iexamine::autodoc },
             { "quern_examine", &iexamine::quern_examine },
             { "smoker_options", &iexamine::smoker_options },
-            { "bait_snare", &iexamine::bait_snare },
-            { "harvest_snare", &iexamine::harvest_snare },
+            { "hunting_snare", &iexamine::hunting_snare },
             { "open_safe", &iexamine::open_safe },
             { "workbench", &iexamine::workbench },
             { "dimensional_portal", &iexamine::dimensional_portal },

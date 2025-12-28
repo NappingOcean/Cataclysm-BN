@@ -63,6 +63,12 @@ void snaring_hunting_data::deserialize( const JsonObject &jo )
 {
     mandatory( jo, false, "id", id );
 
+    if( jo.has_array( "used_for" ) ) {
+        for( const std::string &furn_base : jo.get_array( "used_for" ) ) {
+            used_for.push_back( furn_base );
+        }
+    }
+
     if( jo.has_object( "habitats" ) ) {
         JsonObject habitats_obj = jo.get_object( "habitats" );
         for( const JsonMember member : habitats_obj ) {
@@ -207,6 +213,56 @@ std::vector<std::string> extract_bait_types( const item *bait_item )
     return bait_types;
 }
 
+// Find hunting_data by furniture at position
+const snaring_hunting_data *find_hunting_data_for_furniture( const tripoint &pos )
+{
+    map &here = get_map();
+    const furn_id &furn_at = here.furn( pos );
+    std::string furn_str = furn_at.id().str();
+
+    // Extract base furniture name (remove _empty/_set/_closed suffix)
+    std::string base_name;
+    if( furn_str.ends_with( "_empty" ) ) {
+        base_name = furn_str.substr( 0, furn_str.length() - 6 );
+    } else if( furn_str.ends_with( "_set" ) ) {
+        base_name = furn_str.substr( 0, furn_str.length() - 4 );
+    } else if( furn_str.ends_with( "_closed" ) ) {
+        base_name = furn_str.substr( 0, furn_str.length() - 7 );
+    } else {
+        base_name = furn_str;
+    }
+
+    // Find all matching hunting_data
+    std::vector<const snaring_hunting_data *> matches;
+    for( const auto &hd : snaring_hunting_data::get_all() ) {
+        for( const std::string &furn_base : hd.used_for ) {
+            if( furn_base == base_name ) {
+                matches.push_back( &hd );
+                break;
+            }
+        }
+    }
+
+    // Handle multiple or no matches
+    if( matches.size() > 1 ) {
+        debugmsg( "Multiple hunting_data found for furniture '%s' (base: '%s'), using first match",
+                  furn_str, base_name );
+        return matches[0];
+    } else if( matches.empty() ) {
+        debugmsg( "No hunting_data found for furniture '%s' (base: '%s'), using default_hunting",
+                  furn_str, base_name );
+        // Find and return default_hunting
+        for( const auto &hd : snaring_hunting_data::get_all() ) {
+            if( hd.id.str() == "default_hunting" ) {
+                return &hd;
+            }
+        }
+        return nullptr;
+    }
+
+    return matches[0];
+}
+
 // Skill multiplier calculation
 double calculate_skill_multiplier( const player &p )
 {
@@ -250,14 +306,8 @@ snare_result check_snare( const tripoint &pos, const std::vector<std::string> &b
 {
     snare_result result;
 
-    // Get hunting data
-    const snaring_hunting_data *data = nullptr;
-    for( const auto &hd : snaring_hunting_data::get_all() ) {
-        if( hd.id.str() == "default_hunting" ) {
-            data = &hd;
-            break;
-        }
-    }
+    // Get hunting data for this furniture
+    const snaring_hunting_data *data = find_hunting_data_for_furniture( pos );
 
     if( !data ) {
         result.message = _( "No hunting data available." );

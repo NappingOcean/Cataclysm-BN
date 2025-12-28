@@ -44,6 +44,7 @@ struct habitat_prey_data {
 // Main hunting data structure
 struct snaring_hunting_data {
     string_id<snaring_hunting_data> id;
+    std::vector<std::string> used_for; // Furniture base names (e.g., "f_snare")
     std::map<std::string, habitat_prey_data> habitats; // ter_str_id -> prey data
 
     bool was_loaded = false;
@@ -81,6 +82,9 @@ omt_population_tracker &get_population_tracker();
 
 // Extract bait types from item's BAIT_XXX flags
 std::vector<std::string> extract_bait_types( const item *bait_item );
+
+// Find hunting_data by furniture at position
+const snaring_hunting_data *find_hunting_data_for_furniture( const tripoint &pos );
 
 // Main hunting functions
 snare_result check_snare( const tripoint &pos, const std::vector<std::string> &bait_flags_str,

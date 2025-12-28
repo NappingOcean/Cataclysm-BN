@@ -9,7 +9,7 @@
     "move_cost_mod": 0,
     "required_str": -1,
     "flags": [ "TRANSPARENT" ],
-    "examine_action": "bait_snare",
+    "examine_action": "hunting_snare",
     "deconstruct": { "items": [ { "item": "wire", "count": 8 }, { "item": "stick", "count": 1 } ] },
     "bash": {
       "str_min": 4,
@@ -29,6 +29,7 @@
     "move_cost_mod": 0,
     "required_str": -1,
     "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM" ],
+    "examine_action": "hunting_snare",
     "deconstruct": { "items": [ { "item": "wire", "count": 8 }, { "item": "stick", "count": 1 } ] },
     "bash": {
       "str_min": 4,
@@ -48,7 +49,7 @@
     "move_cost_mod": 0,
     "required_str": -1,
     "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM" ],
-    "examine_action": "harvest_snare",
+    "examine_action": "hunting_snare",
     "deconstruct": { "items": [ { "item": "wire", "count": 8 }, { "item": "stick", "count": 1 } ] },
     "bash": {
       "str_min": 4,

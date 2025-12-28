@@ -1,19 +1,5 @@
 [
   {
-    "id": "hunting_snare",
-    "type": "GENERIC",
-    "category": "tools",
-    "name": { "str": "hunting snare kit" },
-    "description": "Components for building a wire snare to catch small game. Use construction menu (*) to place it.",
-    "weight": "250 g",
-    "volume": "500 ml",
-    "price": 500,
-    "price_postapoc": 50,
-    "material": [ "steel" ],
-    "symbol": "^",
-    "color": "light_gray"
-  },
-  {
     "id": "fake_snare_bait",
     "type": "TOOL",
     "category": "other",
@@ -34,8 +20,8 @@
     "comestible_type": "FOOD",
     "name": { "str": "test bait" },
     "description": "Testing bait for hunting snares.",
-    "weight": "100 g",
-    "volume": "250 ml",
+    "weight": "10 g",
+    "volume": "10 ml",
     "price": 100,
     "material": [ "flesh" ],
     "symbol": "%",

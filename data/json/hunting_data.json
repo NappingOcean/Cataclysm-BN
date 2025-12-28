@@ -2,6 +2,7 @@
   {
     "type": "hunting_data",
     "id": "default_hunting",
+    "used_for": [ "f_snare" ],
     "habitats": {
       "forest": {
         "SMALL_GAME": [
