@@ -61,3 +61,7 @@ After the bait duration expires, the snare will automatically transform into eit
 To add a new type of snare, you need to create a new furniture definition in `furniture.json` for the empty, set, and closed states of the snare. Each one has same `examine` function `hunting_snare` to handle the snare interactions.<br><br>
 
 Then, create a new hunting data definition in `hunting_data.json` that specifies the prey lists for different habitats. Finally, ensure that the snare construction recipe in `construction.json` references the correct furniture types and that the bait items have the appropriate bait type flags.
+
+## Is it infinite meat?
+
+No. If you keep using the snares in same location, the prey population will decrease over time, reducing the chances of catching anything. It's advisable to move your snares to different locations periodically to allow prey populations to recover.
