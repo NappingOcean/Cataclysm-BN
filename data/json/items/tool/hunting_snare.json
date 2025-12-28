@@ -3,7 +3,7 @@
     "id": "fake_snare_bait",
     "type": "TOOL",
     "category": "other",
-    "name": { "str": "fake snare tracker", "str_pl": "fake snare trackers" },
+    "name": { "str": "fake snare tracker" },
     "description": "This is a fake item used to track snare status. If you have this, it's a bug.",
     "weight": "1 g",
     "volume": "1 ml",
