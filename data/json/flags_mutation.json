@@ -140,5 +140,13 @@
   {
     "id": "FLIGHT_ALWAYS_ACTIVE",
     "type": "mutation_flag"
+  },
+  {
+    "id": "LUA_HOOKS_AT_ACTIVATION",
+    "type": "mutation_flag"
+  },
+  {
+    "id": "LUA_HOOKS_AT_DEACTIVATION",
+    "type": "mutation_flag"
   }
 ]

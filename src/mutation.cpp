@@ -11,6 +11,7 @@
 
 #include "avatar_action.h"
 #include "bionics.h"
+#include "catalua_hooks.h"
 #include "character.h"
 #include "color.h"
 #include "creature.h"
@@ -77,6 +78,9 @@ static const trait_id trait_THRESH_MYCUS( "THRESH_MYCUS" );
 static const trait_id trait_TREE_COMMUNION( "TREE_COMMUNION" );
 static const trait_id trait_VOMITOUS( "VOMITOUS" );
 static const trait_id trait_WEB_WEAVER( "WEB_WEAVER" );
+
+static const trait_flag_str_id trait_flag_PSYCHOPATH( "LUA_HOOKS_AT_ACTIVATION" );
+static const trait_flag_str_id trait_flag_LUA_HOOKS_AT_DEACTIVATION( "LUA_HOOKS_AT_DEACTIVATION" );
 
 namespace io
 {
@@ -524,9 +528,19 @@ void Character::activate_mutation( const trait_id &mut )
         recalculate_enchantment_cache();
     }
 
+    auto run_activation_hooks = [ &, this]( ) {
+        if( mut->flags.contains( trait_flag_LUA_HOOKS_AT_ACTIVATION ) ) {
+            cata::run_hooks( "on_mutation_activated", [ &, this]( auto params ) {
+                params["character"] = this;
+                params["mutation"] = &mut;
+            } );
+        }
+    };
+
     if( mdata.transform ) {
         const cata::value_ptr<mut_transform> trans = mdata.transform;
         mod_moves( - trans->moves );
+        run_activation_hooks();
         switch_mutations( mut, trans->target, trans->active );
         return;
     }
@@ -538,6 +552,7 @@ void Character::activate_mutation( const trait_id &mut )
         tdata.powered = false;
         item *burrowing_item = item::spawn_temporary( itype_id( "fake_burrowing" ) );
         invoke_item( burrowing_item );
+        run_activation_hooks();
         return;  // handled when the activity finishes
     } else if( mut == trait_SLIMESPAWNER ) {
         monster *const slime = g->place_critter_around( mtype_id( "mon_player_blob" ), pos(), 1 );
@@ -562,23 +577,28 @@ void Character::activate_mutation( const trait_id &mut )
             add_msg_if_player( m_good, _( "we're a team, we've got this!" ) );
         }
         tdata.powered = false;
+        run_activation_hooks();
         return;
     } else if( mut == trait_NAUSEA || mut == trait_VOMITOUS ) {
         vomit();
         tdata.powered = false;
+        run_activation_hooks();
         return;
     } else if( mut == trait_M_FERTILE ) {
         spores();
         tdata.powered = false;
+        run_activation_hooks();
         return;
     } else if( mut == trait_M_BLOOM ) {
         blossoms();
         tdata.powered = false;
+        run_activation_hooks();
         return;
     } else if( mut == trait_M_PROVENANCE ) {
         spores(); // double trouble!
         blossoms();
         tdata.powered = false;
+        run_activation_hooks();
         return;
     } else if( mut == trait_TREE_COMMUNION ) {
         tdata.powered = false;
@@ -611,10 +631,12 @@ void Character::activate_mutation( const trait_id &mut )
             const time_duration startup_time = has_trait( trait_ROOTS3 ) ? rng( 15_minutes,
                                                30_minutes ) : rng( 60_minutes, 90_minutes );
             activity->values.push_back( to_turns<int>( startup_time ) );
+            run_activation_hooks();
             return;
         } else {
             const time_duration startup_time = rng( 120_minutes, 180_minutes );
             activity->values.push_back( to_turns<int>( startup_time ) );
+            run_activation_hooks();
             return;
         }
     } else if( !mdata.spawn_item.is_empty() ) {
@@ -626,12 +648,14 @@ void Character::activate_mutation( const trait_id &mut )
         }
         add_msg_if_player( mdata.spawn_item_message() );
         tdata.powered = false;
+        run_activation_hooks();
         return;
     } else if( !mdata.ranged_mutation.is_empty() ) {
         add_msg_if_player( mdata.ranged_mutation_message() );
         //TODO!: check later
         avatar_action::fire_ranged_mutation( g->u, item::spawn( mdata.ranged_mutation ) );
         tdata.powered = false;
+        run_activation_hooks();
         return;
     }
 }
@@ -657,6 +681,13 @@ void Character::deactivate_mutation( const trait_id &mut )
 
     if( !mut->enchantments.empty() ) {
         recalculate_enchantment_cache();
+    }
+
+    if( mut->flags.contains( trait_flag_LUA_HOOKS_AT_DEACTIVATION ) ) {
+        cata::run_hooks( "on_mutation_deactivated", [ &, this]( auto params ) {
+            params["character"] = this;
+            params["mutation"] = &mut;
+        } );
     }
 }
 
