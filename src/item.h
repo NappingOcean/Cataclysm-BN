@@ -2365,6 +2365,8 @@ class item : public location_visitable<item>, public game_object<item>
                 const tripoint &pos );
         static detached_ptr<item> process_fake_snare( detached_ptr<item> &&self, player *carrier,
                 const tripoint &pos );
+        static detached_ptr<item> process_fake_cloning_vat( detached_ptr<item> &&self, player *carrier,
+                const tripoint &pos );
         static detached_ptr<item> process_fake_mill( detached_ptr<item> &&self, player *carrier,
                 const tripoint &pos );
         static detached_ptr<item> process_cable( detached_ptr<item> &&self, player *carrier,

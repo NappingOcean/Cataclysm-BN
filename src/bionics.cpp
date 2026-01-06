@@ -2770,7 +2770,10 @@ std::map<bodypart_id, int> Character::bionic_installation_issues( const bionic_i
         return issues;
     }
     for( const std::pair<const bodypart_str_id, int> &elem : bioid->occupied_bodyparts ) {
-        const int lacked_slots = elem.second - get_free_bionics_slots( elem.first );
+        int lacked_slots = elem.second - get_free_bionics_slots( elem.first );
+        if( bioid->upgraded_bionic ) {
+            lacked_slots -= bioid->upgraded_bionic->occupied_bodyparts.at( elem.first );
+        }
         if( lacked_slots > 0 ) {
             issues.emplace( elem.first, lacked_slots );
         }
@@ -2873,12 +2876,16 @@ void Character::remove_bionic( const bionic_id &b )
     std::set<bionic_id> removed_bionics;
     for( bionic &i : *my_bionics ) {
         if( b == i.id && !removed_bionics.contains( i.id ) ) {
+            const units::energy pow_up = i.id->capacity;
+            mod_max_power_level( -1 * pow_up );
             removed_bionics.emplace( i.id );
             continue;
         }
 
         // Linked bionics: if either is removed, the other is removed as well.
         if( ( b->is_included( i.id ) || i.id->is_included( b ) ) && !removed_bionics.contains( i.id ) ) {
+            const units::energy pow_up = i.id->capacity;
+            mod_max_power_level( -1 * pow_up );
             removed_bionics.emplace( i.id );
             continue;
         }
