@@ -76,7 +76,10 @@ void cata::detail::reg_creature( sol::state &lua )
 
         SET_FX_T( attitude_to, Attitude( const Creature & ) const );
 
-        SET_FX_T( sees, bool( const Creature & ) const );
+        luna::set_fx( ut, "sees", sol::overload(
+                          sol::resolve<bool( const Creature & ) const>( &Creature::sees ),
+        []( const Creature & cr, const tripoint & t ) -> bool { return cr.sees( t ); }
+                      ) );
 
         SET_FX_T( sight_range, int( int ) const );
 
@@ -175,8 +178,11 @@ void cata::detail::reg_creature( sol::state &lua )
 
         SET_FX_T( clear_effects, void() );
 
+        DOC( "Sets an arbitrary key : value pair for the creature.NPC dialogue system uses this, with the format(\"npctalk_var\" + \"_\" + type_var + \"_\" + var_context + \"_\" + var_base_name) used for the key, skipping type or context if empty." );
         SET_FX_T( set_value, void( const std::string &, const std::string & ) );
+        DOC( "Removes an arbitrary entry using the same key format as set_value." );
         SET_FX_T( remove_value, void( const std::string & ) );
+        DOC( "Retrieves an arbitrary entry using the same key format as set_value." );
         SET_FX_T( get_value, std::string( const std::string & ) const );
 
         SET_FX_T( get_weight, units::mass() const );
@@ -863,6 +869,8 @@ void cata::detail::reg_character( sol::state &lua )
         SET_FX_T( get_stamina_max, int() const );
         SET_FX_T( set_stamina, void( int ) );
         SET_FX_T( mod_stamina, void( int ) );
+
+        SET_FX_T( sound_hallu, void() );
 
         SET_FX_T( wake_up, void() );
 
