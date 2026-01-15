@@ -6760,7 +6760,55 @@ void iexamine::hunting_snare( player &p, const tripoint &examp )
     if( furn_str.ends_with( "_empty" ) ) {
         bait_snare( p, examp );
     } else if( furn_str.ends_with( "_set" ) ) {
-        add_msg( _( "You should stay away from the trap for animals to approach." ) );
+        // Menu for baited trap
+        uilist amenu;
+        amenu.text = _( "Baited trap options:" );
+        amenu.addentry( 0, true, 'r', _( "Remove bait and reset trap" ) );
+        amenu.addentry( 1, true, 'c', _( "Cancel" ) );
+        amenu.query();
+
+        if( amenu.ret == 0 ) {
+            // Remove bait and convert to _empty
+            std::string base_name = furn_str.substr( 0, furn_str.length() - 4 ); // Remove "_set"
+
+            // Return bait to player
+            map_stack items = here.i_at( examp );
+            for( auto it = items.begin(); it != items.end(); ) {
+                item &current_item = **it;
+
+                // Skip the fake tracker item
+                if( current_item.typeId().str() == "fake_snare_bait" ) {
+                    ++it;
+                    continue;
+                }
+
+                // Check if this is actual bait (has BAIT_ flag)
+                bool is_bait = false;
+                for( const flag_id &flag : current_item.type->get_flags() ) {
+                    if( flag.str().starts_with( "BAIT_" ) ) {
+                        is_bait = true;
+                        break;
+                    }
+                }
+
+                if( is_bait ) {
+                    add_msg( m_info, _( "You retrieve the %s." ), current_item.tname() );
+                    detached_ptr<item> det;
+                    it = here.i_rem( examp, it, &det );
+                    p.i_add( std::move( det ) );
+                } else {
+                    ++it;
+                }
+            }
+
+            // Remove all items from trap (including fake tracker)
+            here.i_clear( examp );
+
+            // Convert to empty trap
+            here.furn_set( examp, furn_str_id( base_name + "_empty" ) );
+            add_msg( m_good, _( "You reset the trap." ) );
+            p.mod_moves( -to_moves<int>( 5_seconds ) );
+        }
     } else if( furn_str.ends_with( "_closed" ) ) {
         harvest_snare( p, examp );
     } else {
