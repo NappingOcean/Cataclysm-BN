@@ -40,7 +40,7 @@ void prey_entry::deserialize( const JsonObject &jo )
 void habitat_prey_data::deserialize( const JsonObject &jo )
 {
     for( const JsonMember member : jo ) {
-        std::string prey_type = member.name(); // e.g., "SMALL_GAME", "LARGE_GAME"
+        const std::string &prey_type = member.name(); // e.g., "SMALL_GAME", "LARGE_GAME"
         std::vector<prey_entry> entries;
 
         for( JsonObject prey_obj : member.get_array() ) {
@@ -86,7 +86,8 @@ void snaring_hunting_data::check() const
     for( const auto &[habitat_name, prey_data] : habitats ) {
         for( const auto &[prey_type, entries] : prey_data.prey_types ) {
             for( const auto &prey : entries ) {
-                if( !prey.prey.is_valid() ) {
+                // Allow "none" as explicit failure marker
+                if( prey.prey.str() != "none" && !prey.prey.is_valid() ) {
                     debugmsg( "Invalid prey '%s' in type '%s', habitat '%s' for hunting_data '%s'",
                               prey.prey.c_str(), prey_type, habitat_name, id.c_str() );
                 }
@@ -318,27 +319,19 @@ snare_result check_snare( const tripoint &pos, const std::vector<std::string> &b
     map &here = get_map();
     tripoint_abs_omt center_omt( ms_to_omt_copy( here.getabs( pos ) ) );
 
-    // Count habitat types in 3x3 OMT area
+    // Count habitat types in 3x3 OMT area using land_use_code
     std::map<std::string, int> habitat_weights;
     for( int dx = -1; dx <= 1; dx++ ) {
         for( int dy = -1; dy <= 1; dy++ ) {
             tripoint_abs_omt check_pos = center_omt + tripoint( dx, dy, 0 );
             const oter_id &omt_ter = overmap_buffer.ter( check_pos );
-            std::string omt_id = omt_ter.id().str();
 
-            std::string habitat;
-            if( omt_id.find( "forest" ) != std::string::npos ) {
-                habitat = "forest";
-            } else if( omt_id.find( "field" ) != std::string::npos ||
-                       omt_id.find( "farm" ) != std::string::npos ) {
-                habitat = "field";
-            } else if( omt_id.find( "swamp" ) != std::string::npos ||
-                       omt_id.find( "bog" ) != std::string::npos ) {
-                habitat = "swamp";
-            } else {
-                continue; // Skip non-habitat tiles
+            overmap_land_use_code_id land_use = omt_ter->get_land_use_code();
+            if( !land_use.is_valid() ) {
+                continue; // Skip tiles without land_use_code
             }
 
+            const std::string &habitat = land_use.str();
             habitat_weights[habitat]++;
         }
     }
@@ -402,18 +395,25 @@ snare_result check_snare( const tripoint &pos, const std::vector<std::string> &b
 
     // Roll for success
     if( rng_float( 0, 1 ) <= success_chance ) {
-        // Select random prey
+        // Select random prey (including "none" for explicit failure)
         weighted_int_list<mtype_id> prey_list;
         for( const auto &entry : available_prey ) {
             prey_list.add( entry.prey, entry.weight );
         }
 
-        result.success = true;
-        result.prey_id = *prey_list.pick();
-        result.message = string_format( _( "You caught a %s!" ), result.prey_id->nname() );
+        mtype_id selected = *prey_list.pick();
+        
+        // Check if "none" was selected (explicit failure)
+        if( selected.str() == "none" ) {
+            result.message = _( "The snare was empty." );
+        } else {
+            result.success = true;
+            result.prey_id = selected;
+            result.message = string_format( _( "You caught a %s!" ), result.prey_id->nname() );
 
-        // Apply penalty
-        tracker.apply_catch_penalty( pos );
+            // Apply penalty only on successful catch
+            tracker.apply_catch_penalty( pos );
+        }
     } else {
         result.message = _( "The snare was empty." );
     }
