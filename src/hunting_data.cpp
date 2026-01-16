@@ -9,6 +9,7 @@
 #include "itype.h"
 #include "json.h"
 #include "map.h"
+#include "options.h"
 #include "overmap.h"
 #include "overmapbuffer.h"
 #include "player.h"
@@ -265,15 +266,15 @@ const snaring_hunting_data *find_hunting_data_for_furniture( const tripoint &pos
 }
 
 // Skill multiplier calculation
-double calculate_skill_multiplier( const player &p )
+float calculate_skill_multiplier( const player &p )
 {
     int traps_skill = p.get_skill_level( skill_traps );
     int survival_skill = p.get_skill_level( skill_survival );
 
     // Base: 60% at 0/0, scales to 85% at 6/6
-    double base = 0.60;
-    double skill_bonus = ( traps_skill + survival_skill ) * 0.0208; // ~2.08% per level
-    return std::min( 0.85, base + skill_bonus );
+    float base = 0.60f;
+    float skill_bonus = ( traps_skill + survival_skill ) * 0.0208f; // ~2.08% per level
+    return std::min( 0.85f, base + skill_bonus );
 }
 
 // Presence penalty based on daily visits
@@ -375,23 +376,23 @@ snare_result check_snare( const tripoint &pos, const std::vector<std::string> &b
     // Calculate success probability
     auto &tracker = get_population_tracker();
     int population = tracker.get_population( pos );
-    double pop_factor = population / 20.0; // 0-5 range
+    float pop_factor = population / 50.0; // 0-2 range
 
     // Habitat bonus based on how many OMTs match
-    double habitat_bonus = 1.0 + ( max_weight / 9.0 ) * 0.5; // 1.0-1.5 based on habitat concentration
+    float habitat_bonus = 1.0 + ( max_weight / 9.0 ) * 0.5; // 1.0-1.5 based on habitat concentration
 
     // Bait bonus based on variety
-    double bait_bonus = bait_types.size() >= 2 ? 1.3 : 1.1;
+    float bait_bonus = bait_types.size() >= 2 ? 1.3 : 1.1;
 
-    double skill_mult = calculate_skill_multiplier( p );
+    float skill_mult = calculate_skill_multiplier( p );
     int presence_pen = calculate_presence_penalty( pos );
-    double presence_factor = 1.0 - ( presence_pen / 100.0 );
-    double proximity_factor = 1.0 - ( proximity_penalty / 100.0 );
+    float presence_factor = 1.0 - ( presence_pen / 100.0 );
+    float proximity_factor = 1.0 - ( proximity_penalty / 100.0 );
 
-    double success_chance = pop_factor * habitat_bonus * bait_bonus *
-                            skill_mult * presence_factor * proximity_factor;
+    float success_chance = pop_factor * habitat_bonus * bait_bonus *
+                           skill_mult * presence_factor * proximity_factor * get_option<float>( "SNARING_RATE" );
 
-    success_chance = std::clamp( success_chance, 0.0, 0.95 ); // Max 95% success
+    success_chance = std::clamp( success_chance, 0.0f, 0.95f ); // Max 95% success
 
     // Roll for success
     if( rng_float( 0, 1 ) <= success_chance ) {
@@ -402,7 +403,7 @@ snare_result check_snare( const tripoint &pos, const std::vector<std::string> &b
         }
 
         mtype_id selected = *prey_list.pick();
-        
+
         // Check if "none" was selected (explicit failure)
         if( selected.str() == "none" ) {
             result.message = _( "The snare was empty." );

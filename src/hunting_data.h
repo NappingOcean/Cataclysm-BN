@@ -90,7 +90,7 @@ const snaring_hunting_data *find_hunting_data_for_furniture( const tripoint &pos
 snare_result check_snare( const tripoint &pos, const std::vector<std::string> &bait_flags_str,
                           const player &p, int proximity_penalty );
 
-double calculate_skill_multiplier( const player &p );
+float calculate_skill_multiplier( const player &p );
 int calculate_presence_penalty( const tripoint &pos );
 
 } // namespace hunting
