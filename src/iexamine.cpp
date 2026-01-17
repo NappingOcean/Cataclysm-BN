@@ -6915,7 +6915,7 @@ void iexamine::bait_snare( player &p, const tripoint &examp )
     here.furn_set( examp, furn_str_id( base_name + "_set" ) );
 
     add_msg( m_good, _( "You bait the snare with %s." ), bait_name );
-    p.mod_moves( -to_moves<int>( 2_seconds ) );
+    p.mod_moves( -to_moves<int>( 5_seconds ) );
 }
 
 void iexamine::harvest_snare( player &p, const tripoint &examp )
@@ -6932,63 +6932,84 @@ void iexamine::harvest_snare( player &p, const tripoint &examp )
 
     map_stack items_here = here.i_at( examp );
 
-    // Find the fake tracking item and actual bait
-    item *bait = nullptr;
-    std::vector<std::string> bait_flags_str;
-    std::string base_furn;
-    int proximity_penalty = 0;
-
+    // Find item with stored hunting data (bait with vars set by process_fake_snare)
+    item *data_item = nullptr;
     for( item * const &it : items_here ) {
-        if( !hunting::extract_bait_types( it ).empty() ) {
-            bait = it;
-            base_furn = it->get_var( "base_furn", "f_snare" );
-            proximity_penalty = it->get_var( "proximity_penalty", 0 );
-            bait_flags_str = hunting::extract_bait_types( it );
-        } else {
-            // Extract BAIT_ flags from actual bait items
-            for( const flag_id &flag : it->type->get_flags() ) {
-                if( flag.str().starts_with( "BAIT_" ) ) {
-                    bait_flags_str.push_back( flag.str().substr( 5 ) );
-                }
-            }
+        if( !hunting::extract_bait_types( it ).empty() && it->has_var( "base_furn" ) ) {
+            data_item = it;
+            break;
         }
     }
 
-    // If no fake_item found, the timer expired and removed it
-    // Treat as unsuccessful catch
-    if( !bait ) {
+    // If no data found, trap triggered but process_fake_snare didn't run
+    // (shouldn't happen, but handle gracefully)
+    if( !data_item ) {
         add_msg( m_neutral, _( "The snare is empty. Nothing was caught." ) );
         std::string base = furn_str.substr( 0, furn_str.length() - 7 );
         here.furn_set( examp, furn_str_id( base + "_empty" ) );
-        // Clear all items (bait consumed/scattered)
         items_here.clear();
-        p.mod_moves( -to_moves<int>( 1_seconds ) );
+        p.mod_moves( -to_moves<int>( 5_seconds ) );
         return;
     }
-    // Check if snare caught anything
-    hunting::snare_result result = hunting::check_snare( examp, bait_flags_str, p,
-                                   proximity_penalty );
 
-    // Remove all items (fake tracker + bait)
+    // Extract stored data
+    std::string base_furn = data_item->get_var( "base_furn", "f_snare" );
+    int proximity_penalty = data_item->get_var( "proximity_penalty", 0 );
+    time_point snared_time = time_point::from_turn( data_item->get_var( "snared_time",
+                             to_turn<int>( calendar::turn ) ) );
+    std::vector<std::string> bait_flags_str = hunting::extract_bait_types( data_item );
+
+    // Process snare catch (check + generate corpse)
+    hunting::snare_catch_result catch_result = hunting::process_snare_catch( examp, bait_flags_str,
+            p, proximity_penalty, snared_time );
+
+    // Remove all items (bait consumed)
     items_here.clear();
 
     // Process results
-    if( result.success && result.prey_id.is_valid() ) {
-        add_msg( m_good, result.message );
-        // Create corpse of caught creature
-        detached_ptr<item> corpse = item::make_corpse( result.prey_id, calendar::turn );
-        here.add_item_or_charges( examp, std::move( corpse ) );
+    if( catch_result.hunt_result.success && catch_result.corpse ) {
+        add_msg( m_good, catch_result.hunt_result.message );
+        here.add_item_or_charges( examp, std::move( catch_result.corpse ) );
         p.practice( skill_trapping, 25 );
         p.practice( skill_survival, 12 );
     } else {
-        add_msg( m_neutral, result.message );
+        add_msg( m_neutral, catch_result.hunt_result.message );
         p.practice( skill_trapping, 5 );
         p.practice( skill_survival, 2 );
     }
 
     // Reset furniture to empty trap
-    here.furn_set( examp, furn_str_id( base_furn + "_empty" ) );
-    p.mod_moves( -to_moves<int>( 1_seconds ) );
+    // Chance to collapse the snare based on trapping skill
+    int const skill_level = p.get_skill_level( skill_trapping );
+    int const damage_chance = rng( 0, 5 );
+
+    if( damage_chance > skill_level + 2 ) {
+        // Try to bash the trap (may or may not succeed in destroying it)
+        // strength: use player's strength to determine if trap actually breaks
+        // silent: false (make sound)
+        // destroy: false (use normal bash mechanics)
+        // bash_floor: false (only bash furniture)
+        // roll: random value for bash resistance interpolation
+        // bashing_from_above: false (normal bash)
+        bash_params params{
+            p.get_str(), false, false, false,
+            static_cast<float>( rng_float( 0, 1.0f ) ), false
+        };
+        bash_results results = here.bash_ter_furn( examp, params );
+
+        if( results.success ) {
+            // Trap was actually destroyed
+            add_msg( m_bad, _( "You damaged the snare while harvesting it, and it breaks." ) );
+        } else {
+            // Bash failed, trap survives but player nearly broke it
+            add_msg( m_warning, _( "You nearly damaged the snare, but managed to recover it." ) );
+            here.furn_set( examp, furn_str_id( base_furn + "_empty" ) );
+        }
+    } else {
+        // Skillful harvest - no damage
+        here.furn_set( examp, furn_str_id( base_furn + "_empty" ) );
+    }
+    p.mod_moves( -to_moves<int>( 5_seconds ) );
 }
 
 void iexamine::open_safe( player &, const tripoint &examp )

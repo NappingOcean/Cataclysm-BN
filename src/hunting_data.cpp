@@ -6,6 +6,7 @@
 #include "calendar.h"
 #include "character.h"
 #include "generic_factory.h"
+#include "item.h"
 #include "itype.h"
 #include "json.h"
 #include "map.h"
@@ -63,12 +64,6 @@ void snaring_hunting_data::load( const JsonObject &jo, const std::string & )
 void snaring_hunting_data::deserialize( const JsonObject &jo )
 {
     mandatory( jo, false, "id", id );
-
-    if( jo.has_array( "used_for" ) ) {
-        for( const std::string &furn_base : jo.get_array( "used_for" ) ) {
-            used_for.push_back( furn_base );
-        }
-    }
 
     if( jo.has_object( "habitats" ) ) {
         JsonObject habitats_obj = jo.get_object( "habitats" );
@@ -234,35 +229,24 @@ const snaring_hunting_data *find_hunting_data_for_furniture( const tripoint &pos
         base_name = furn_str;
     }
 
-    // Find all matching hunting_data
-    std::vector<const snaring_hunting_data *> matches;
+    // Find hunting_data by id (which is the furniture base_name)
+    snaring_hunting_data_id lookup_id( base_name );
+
+    // Try to find exact match
     for( const auto &hd : snaring_hunting_data::get_all() ) {
-        for( const std::string &furn_base : hd.used_for ) {
-            if( furn_base == base_name ) {
-                matches.push_back( &hd );
-                break;
-            }
+        if( hd.id == lookup_id ) {
+            return &hd;
         }
     }
 
-    // Handle multiple or no matches
-    if( matches.size() > 1 ) {
-        debugmsg( "Multiple hunting_data found for furniture '%s' (base: '%s'), using first match",
-                  furn_str, base_name );
-        return matches[0];
-    } else if( matches.empty() ) {
-        debugmsg( "No hunting_data found for furniture '%s' (base: '%s'), using default_hunting",
-                  furn_str, base_name );
-        // Find and return default_hunting
-        for( const auto &hd : snaring_hunting_data::get_all() ) {
-            if( hd.id.str() == "default_hunting" ) {
-                return &hd;
-            }
+    // No match found - use default_hunting as fallback
+    for( const auto &hd : snaring_hunting_data::get_all() ) {
+        if( hd.id.str() == "default_hunting" ) {
+            return &hd;
         }
-        return nullptr;
     }
 
-    return matches[0];
+    return nullptr;
 }
 
 // Skill multiplier calculation
@@ -417,6 +401,25 @@ snare_result check_snare( const tripoint &pos, const std::vector<std::string> &b
         }
     } else {
         result.message = _( "The snare was empty." );
+    }
+
+    return result;
+}
+
+// Process snare catch: run check_snare and generate corpse if successful
+snare_catch_result process_snare_catch( const tripoint &pos,
+                                        const std::vector<std::string> &bait_flags_str,
+                                        const Character &ch, int proximity_penalty,
+                                        time_point snared_time )
+{
+    snare_catch_result result;
+    // Convert Character to player for check_snare
+    const player &p = dynamic_cast<const player &>( ch );
+    result.hunt_result = check_snare( pos, bait_flags_str, p, proximity_penalty );
+
+    // Generate corpse if hunt was successful
+    if( result.hunt_result.success && result.hunt_result.prey_id.is_valid() ) {
+        result.corpse = item::make_corpse( result.hunt_result.prey_id, snared_time );
     }
 
     return result;

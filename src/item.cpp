@@ -10103,13 +10103,9 @@ detached_ptr<item> item::process_fake_snare( detached_ptr<item> &&self, player *
             int current_penalty = self->get_var( "proximity_penalty", 0 );
             self->set_var( "proximity_penalty", current_penalty + 10 );
         } else {
-            // Check if player is in same OMT
-            tripoint_abs_omt snare_omt( ms_to_omt_copy( here.getabs( pos ) ) );
-            tripoint_abs_omt player_omt( ms_to_omt_copy( here.getabs(
-                                             get_player_character().pos() ) ) );
-
-            if( snare_omt == player_omt ) {
-                // Player in same OMT - add penalty (1% per turn in same OMT)
+            // Check if player is in 12 tiles
+            if( rl_dist( here.getabs( pos ), get_player_character().pos() ) <= 12 ) {
+                // Player in 12 tiles - add penalty (1% per 10 mins in 12 tiles)
                 int current_penalty = self->get_var( "proximity_penalty", 0 );
                 self->set_var( "proximity_penalty", std::min( 50, current_penalty + 1 ) );
             }
@@ -10119,17 +10115,67 @@ detached_ptr<item> item::process_fake_snare( detached_ptr<item> &&self, player *
     if( to_turns<int>( self->age() ) >= self->get_var( "bait_counter", 0 ) ||
         self->item_counter == 0 ) {
         // Trigger the snare!
+        sounds::sound( pos, 10, sounds::sound_t::combat, _( "SNAP!" ), false, "trap", "bear_trap" );
+
         std::string base_name = self->get_var( "base_furn", "f_snare" );
-        here.furn_set( pos, furn_str_id( base_name + "_closed" ) );
-        map_stack items = here.i_at( pos );
-        for( auto it : items ) {
-            if( !hunting::extract_bait_types( it ).empty() ) {
-                it->set_var( "base_furn", base_name );
-                it->set_var( "proximity_penalty", self->get_var( "proximity_penalty", 0 ) );
-                break;
+
+        // Check if this is a TINY trap (instant processing)
+        const furn_t &furn_type = *furn_at;
+        bool is_tiny = furn_type.has_flag( "TINY" );
+
+        if( is_tiny ) {
+            // TINY traps process immediately - run hunting check and place corpse
+            map_stack items = here.i_at( pos );
+            item *bait_item = nullptr;
+
+            // Find bait item
+            for( auto it : items ) {
+                if( !hunting::extract_bait_types( it ).empty() ) {
+                    bait_item = it;
+                    break;
+                }
+            }
+
+            if( bait_item ) {
+                // Extract hunting data
+                std::vector<std::string> bait_flags_str = hunting::extract_bait_types( bait_item );
+                int proximity_penalty = self->get_var( "proximity_penalty", 0 );
+                time_point snared_time = calendar::turn;
+
+                // Process catch (no player interaction, use get_player_character)
+                hunting::snare_catch_result catch_result = hunting::process_snare_catch(
+                            pos, bait_flags_str, get_player_character(), proximity_penalty, snared_time );
+
+                // Clear items from map (bait consumed)
+                // Note: 'self' is already detached, so i_clear only removes bait items from map
+                here.i_clear( pos );
+
+                // Place corpse if successful
+                if( catch_result.hunt_result.success && catch_result.corpse ) {
+                    here.add_item_or_charges( pos, std::move( catch_result.corpse ) );
+                }
+            } else {
+                // No bait found, just clear
+                here.i_clear( pos );
+            }
+
+            // Reset to empty immediately
+            here.furn_set( pos, furn_str_id( base_name + "_empty" ) );
+        } else {
+            // Normal traps: set to _closed state for player to examine later
+            here.furn_set( pos, furn_str_id( base_name + "_closed" ) );
+            map_stack items = here.i_at( pos );
+            for( auto it : items ) {
+                if( !hunting::extract_bait_types( it ).empty() ) {
+                    it->set_var( "base_furn", base_name );
+                    it->set_var( "proximity_penalty", self->get_var( "proximity_penalty", 0 ) );
+                    it->set_var( "snared_time", to_turn<int>( calendar::turn ) );
+                    break;
+                }
             }
         }
-        // Remove fake tracker item (actual bait remains for harvest_snare to read)
+
+        // Remove fake tracker item
         return detached_ptr<item>();
     }
 

@@ -6,6 +6,7 @@
 
 #include "calendar.h"
 #include "coordinates.h"
+#include "detached_ptr.h"
 #include "int_id.h"
 #include "mtype.h"
 #include "string_id.h"
@@ -15,6 +16,7 @@ class Character;
 class JsonObject;
 class JsonOut;
 class player;
+class item;
 
 namespace hunting
 {
@@ -24,6 +26,12 @@ struct snare_result {
     bool success = false;
     mtype_id prey_id;
     std::string message;
+};
+
+// Result of processing a snare catch (includes corpse generation)
+struct snare_catch_result {
+    snare_result hunt_result;
+    detached_ptr<item> corpse; // nullptr if failed or prey is "none"
 };
 
 // Single prey entry with mtype_id and spawn weight
@@ -43,8 +51,7 @@ struct habitat_prey_data {
 
 // Main hunting data structure
 struct snaring_hunting_data {
-    string_id<snaring_hunting_data> id;
-    std::vector<std::string> used_for; // Furniture base names (e.g., "f_snare")
+    string_id<snaring_hunting_data> id; // Furniture base name (e.g., "f_wire_snare")
     std::map<std::string, habitat_prey_data> habitats; // ter_str_id -> prey data
 
     bool was_loaded = false;
@@ -89,6 +96,12 @@ const snaring_hunting_data *find_hunting_data_for_furniture( const tripoint &pos
 // Main hunting functions
 snare_result check_snare( const tripoint &pos, const std::vector<std::string> &bait_flags_str,
                           const player &p, int proximity_penalty );
+
+// Process snare catch: run check_snare and generate corpse if successful
+snare_catch_result process_snare_catch( const tripoint &pos,
+                                        const std::vector<std::string> &bait_flags_str,
+                                        const Character &ch, int proximity_penalty,
+                                        time_point snared_time );
 
 float calculate_skill_multiplier( const player &p );
 int calculate_presence_penalty( const tripoint &pos );

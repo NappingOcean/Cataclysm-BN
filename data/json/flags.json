@@ -1568,15 +1568,39 @@
     "context": [  ]
   },
   {
-    "id": "BAIT_SMALL_GAME",
+    "id": "BAIT_SMALL_GAME_HERBIVORE",
     "type": "json_flag",
-    "info": "Can be used as bait for small game in hunting snares.",
+    "info": "Can be used as bait for small herbivorous game in hunting snares.",
     "context": [  ]
   },
   {
-    "id": "BAIT_LARGE_GAME",
+    "id": "BAIT_SMALL_GAME_CARNIVORE",
     "type": "json_flag",
-    "info": "Can be used as bait for large game in hunting snares.",
+    "info": "Can be used as bait for small carnivorous game in hunting snares.",
+    "context": [  ]
+  },
+  {
+    "id": "BAIT_SMALL_GAME_OMNIVORE",
+    "type": "json_flag",
+    "info": "Can be used as bait for small omnivorous game in hunting snares.",
+    "context": [  ]
+  },
+  {
+    "id": "BAIT_LARGE_GAME_HERBIVORE",
+    "type": "json_flag",
+    "info": "Can be used as bait for large herbivorous game in hunting snares.",
+    "context": [  ]
+  },
+  {
+    "id": "BAIT_LARGE_GAME_CARNIVORE",
+    "type": "json_flag",
+    "info": "Can be used as bait for large carnivorous game in hunting snares.",
+    "context": [  ]
+  },
+  {
+    "id": "BAIT_LARGE_GAME_OMNIVORE",
+    "type": "json_flag",
+    "info": "Can be used as bait for large omnivorous game in hunting snares.",
     "context": [  ]
   },
   {
