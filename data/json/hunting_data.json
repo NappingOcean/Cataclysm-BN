@@ -2,7 +2,7 @@
   {
     "type": "hunting_data",
     "id": "default_hunting",
-    "used_for": [  ],
+    "//": "Fallback hunting data for traps without specific data",
     "habitats": {
       "forest": {
         "SMALL_GAME_HERBIVORE": [
@@ -49,61 +49,155 @@
   {
     "type": "hunting_data",
     "id": "f_wire_snare",
+    "//": "Wire snare - good for small omnivores like rats and squirrels",
     "habitats": {
       "forest": {
         "SMALL_GAME_OMNIVORE": [
-          { "prey": "mon_black_rat", "weight": 80 },
-          { "prey": "mon_chipmunk", "weight": 60 },
-          { "prey": "mon_squirrel", "weight": 40 },
-          { "prey": "mon_groundhog", "weight": 20 }
-        ]
+          { "prey": "mon_black_rat", "weight": 100 },
+          { "prey": "mon_chipmunk", "weight": 80 },
+          { "prey": "mon_squirrel", "weight": 60 },
+          { "prey": "none", "weight": 30 }
+        ],
+        "SMALL_GAME_HERBIVORE": [ { "prey": "mon_rabbit", "weight": 50 }, { "prey": "mon_squirrel", "weight": 40 }, { "prey": "none", "weight": 60 } ]
       },
       "open_land": {
         "SMALL_GAME_OMNIVORE": [
-          { "prey": "none", "weight": 100 },
           { "prey": "mon_black_rat", "weight": 80 },
-          { "prey": "mon_groundhog", "weight": 20 }
-        ]
+          { "prey": "mon_groundhog", "weight": 40 },
+          { "prey": "none", "weight": 120 }
+        ],
+        "SMALL_GAME_HERBIVORE": [ { "prey": "mon_rabbit", "weight": 60 }, { "prey": "none", "weight": 100 } ]
+      },
+      "brushland": {
+        "SMALL_GAME_OMNIVORE": [
+          { "prey": "mon_black_rat", "weight": 90 },
+          { "prey": "mon_squirrel", "weight": 70 },
+          { "prey": "none", "weight": 40 }
+        ],
+        "SMALL_GAME_HERBIVORE": [ { "prey": "mon_rabbit", "weight": 80 }, { "prey": "mon_groundhog", "weight": 50 }, { "prey": "none", "weight": 50 } ]
       }
     }
   },
   {
     "type": "hunting_data",
     "id": "f_rattrap",
-    "copy-from": "f_wire_snare"
+    "//": "Small rattrap - specialized for catching rats and small rodents (TINY flag)",
+    "habitats": {
+      "forest": {
+        "SMALL_GAME_OMNIVORE": [
+          { "prey": "mon_black_rat", "weight": 120 },
+          { "prey": "mon_chipmunk", "weight": 60 },
+          { "prey": "none", "weight": 20 }
+        ]
+      },
+      "open_land": { "SMALL_GAME_OMNIVORE": [ { "prey": "mon_black_rat", "weight": 100 }, { "prey": "none", "weight": 100 } ] },
+      "brushland": { "SMALL_GAME_OMNIVORE": [ { "prey": "mon_black_rat", "weight": 110 }, { "prey": "none", "weight": 50 } ] }
+    }
   },
   {
     "type": "hunting_data",
     "id": "f_big_rattrap",
-    "copy-from": "f_wire_snare"
+    "//": "Large rattrap - catches bigger rodents and small game (TINY flag)",
+    "habitats": {
+      "forest": {
+        "SMALL_GAME_OMNIVORE": [
+          { "prey": "mon_black_rat", "weight": 80 },
+          { "prey": "mon_chipmunk", "weight": 70 },
+          { "prey": "mon_squirrel", "weight": 60 },
+          { "prey": "mon_groundhog", "weight": 40 },
+          { "prey": "none", "weight": 20 }
+        ]
+      },
+      "open_land": {
+        "SMALL_GAME_OMNIVORE": [
+          { "prey": "mon_black_rat", "weight": 70 },
+          { "prey": "mon_groundhog", "weight": 50 },
+          { "prey": "none", "weight": 80 }
+        ]
+      },
+      "brushland": {
+        "SMALL_GAME_OMNIVORE": [
+          { "prey": "mon_black_rat", "weight": 90 },
+          { "prey": "mon_squirrel", "weight": 70 },
+          { "prey": "mon_groundhog", "weight": 60 },
+          { "prey": "none", "weight": 30 }
+        ]
+      },
+      "wetland": { "SMALL_GAME_OMNIVORE": [ { "prey": "mon_muskrat", "weight": 80 }, { "prey": "none", "weight": 60 } ] }
+    }
   },
   {
     "type": "hunting_data",
     "id": "f_deadfall",
+    "//": "Deadfall trap using small boulder - effective for small game only (boulder_small: required_str 10, TINY flag)",
     "habitats": {
       "forest": {
         "SMALL_GAME_HERBIVORE": [
+          { "prey": "mon_rabbit", "weight": 120 },
           { "prey": "mon_squirrel", "weight": 100 },
-          { "prey": "mon_rabbit", "weight": 80 },
-          { "prey": "mon_chipmunk", "weight": 60 }
+          { "prey": "mon_chipmunk", "weight": 70 },
+          { "prey": "none", "weight": 30 }
         ],
-        "LARGE_GAME_HERBIVORE": [ { "prey": "mon_deer", "weight": 30 }, { "prey": "mon_fox_red", "weight": 40 }, { "prey": "none", "weight": 30 } ]
+        "SMALL_GAME_OMNIVORE": [
+          { "prey": "mon_black_rat", "weight": 80 },
+          { "prey": "mon_chipmunk", "weight": 60 },
+          { "prey": "none", "weight": 60 }
+        ]
       },
       "brushland": {
-        "SMALL_GAME_HERBIVORE": [ { "prey": "mon_rabbit", "weight": 110 }, { "prey": "mon_groundhog", "weight": 70 } ],
-        "LARGE_GAME_HERBIVORE": [ { "prey": "mon_deer", "weight": 40 } ]
+        "SMALL_GAME_HERBIVORE": [
+          { "prey": "mon_rabbit", "weight": 140 },
+          { "prey": "mon_groundhog", "weight": 90 },
+          { "prey": "mon_squirrel", "weight": 50 },
+          { "prey": "none", "weight": 20 }
+        ],
+        "SMALL_GAME_OMNIVORE": [
+          { "prey": "mon_black_rat", "weight": 70 },
+          { "prey": "mon_groundhog", "weight": 60 },
+          { "prey": "none", "weight": 70 }
+        ]
+      },
+      "open_land": {
+        "SMALL_GAME_HERBIVORE": [ { "prey": "mon_rabbit", "weight": 110 }, { "prey": "mon_groundhog", "weight": 80 }, { "prey": "none", "weight": 50 } ],
+        "SMALL_GAME_OMNIVORE": [
+          { "prey": "mon_black_rat", "weight": 60 },
+          { "prey": "mon_groundhog", "weight": 50 },
+          { "prey": "none", "weight": 90 }
+        ]
+      }
+    }
+  },
+  {
+    "type": "hunting_data",
+    "id": "f_spiked_pit_trap",
+    "//": "Spiked pit trap - dangerous trap for medium to large game (TINY flag for instant processing)",
+    "habitats": {
+      "forest": {
+        "LARGE_GAME_HERBIVORE": [ { "prey": "mon_deer", "weight": 80 }, { "prey": "mon_fox_red", "weight": 60 }, { "prey": "none", "weight": 40 } ]
+      },
+      "brushland": { "LARGE_GAME_HERBIVORE": [ { "prey": "mon_deer", "weight": 100 }, { "prey": "none", "weight": 50 } ] },
+      "open_land": { "LARGE_GAME_HERBIVORE": [ { "prey": "mon_deer", "weight": 60 }, { "prey": "none", "weight": 80 } ] },
+      "wetland_forest": {
+        "LARGE_GAME_HERBIVORE": [ { "prey": "mon_beaver", "weight": 70 }, { "prey": "mon_deer", "weight": 50 }, { "prey": "none", "weight": 50 } ]
       }
     }
   },
   {
     "type": "hunting_data",
     "id": "f_beartrap_hunting",
+    "//": "Bear trap for hunting - specialized for large game (TINY flag)",
     "habitats": {
       "forest": {
-        "LARGE_GAME_HERBIVORE": [ { "prey": "mon_deer", "weight": 100 }, { "prey": "mon_fox_red", "weight": 50 }, { "prey": "none", "weight": 20 } ]
+        "LARGE_GAME_HERBIVORE": [ { "prey": "mon_deer", "weight": 120 }, { "prey": "mon_fox_red", "weight": 50 }, { "prey": "none", "weight": 20 } ]
       },
-      "brushland": { "LARGE_GAME_HERBIVORE": [ { "prey": "mon_deer", "weight": 120 }, { "prey": "none", "weight": 30 } ] },
-      "wetland_forest": { "LARGE_GAME_HERBIVORE": [ { "prey": "mon_beaver", "weight": 80 }, { "prey": "mon_deer", "weight": 60 } ] }
+      "brushland": { "LARGE_GAME_HERBIVORE": [ { "prey": "mon_deer", "weight": 140 }, { "prey": "none", "weight": 30 } ] },
+      "wetland_forest": {
+        "LARGE_GAME_HERBIVORE": [ { "prey": "mon_beaver", "weight": 100 }, { "prey": "mon_deer", "weight": 80 }, { "prey": "none", "weight": 20 } ]
+      },
+      "wetland": {
+        "LARGE_GAME_HERBIVORE": [ { "prey": "mon_beaver", "weight": 120 }, { "prey": "mon_otter", "weight": 40 }, { "prey": "none", "weight": 40 } ]
+      },
+      "open_land": { "LARGE_GAME_HERBIVORE": [ { "prey": "mon_deer", "weight": 80 }, { "prey": "none", "weight": 60 } ] }
     }
   }
 ]

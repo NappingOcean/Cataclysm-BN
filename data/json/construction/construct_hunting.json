@@ -4,12 +4,48 @@
     "id": "constr_wire_snare",
     "group": "set_wire_snare",
     "category": "SNARE",
-    "required_skills": [ [ "traps", 2 ], [ "survival", 1 ] ],
+    "required_skills": [ [ "traps", 1 ], [ "survival", 1 ] ],
     "time": "3 m",
     "qualities": [ [ { "id": "CUT", "level": 1 } ] ],
     "components": [ [ [ "wire", 4 ], [ "cable", 8 ] ], [ [ "stick", 1 ] ] ],
-    "pre_note": "Requires open ground.",
-    "pre_special": "check_empty",
+    "pre_note": "Requires a young tree to tie the snare to.",
+    "pre_terrain": "t_tree_young",
     "post_furniture": "f_wire_snare_empty"
+  },
+  {
+    "type": "construction",
+    "id": "constr_deadfall",
+    "group": "set_deadfall",
+    "category": "SNARE",
+    "required_skills": [ [ "traps", 1 ], [ "survival", 1 ] ],
+    "time": "2 m",
+    "components": [ [ [ "stick", 2 ] ], [ [ "string_6", 2 ] ] ],
+    "pre_furniture": "f_boulder_small",
+    "pre_note": "Requires a small boulder.",
+    "post_furniture": "f_deadfall_empty"
+  },
+  {
+    "type": "construction",
+    "id": "constr_deadfall_again",
+    "group": "set_deadfall",
+    "category": "SNARE",
+    "required_skills": [ [ "traps", 1 ], [ "survival", 1 ] ],
+    "time": "2 m",
+    "components": [ [ [ "stick", 2 ] ], [ [ "string_6", 2 ] ] ],
+    "pre_furniture": "f_boulder_small_harvested",
+    "pre_note": "Requires a small boulder.",
+    "post_furniture": "f_deadfall_empty"
+  },
+  {
+    "type": "construction",
+    "id": "constr_spiked_pit_trap",
+    "group": "set_spiked_pit_trap",
+    "category": "SNARE",
+    "required_skills": [ [ "traps", 1 ] ],
+    "time": "1 m",
+    "components": [ [ [ "sheet", 1 ] ] ],
+    "pre_terrain": "t_pit_spiked",
+    "pre_note": "Requires a spiked pit trap.",
+    "post_furniture": "f_spiked_pit_trap_empty"
   }
 ]

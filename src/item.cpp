@@ -10117,13 +10117,15 @@ detached_ptr<item> item::process_fake_snare( detached_ptr<item> &&self, player *
         // Trigger the snare!
         sounds::sound( pos, 10, sounds::sound_t::combat, _( "SNAP!" ), false, "trap", "bear_trap" );
 
-        std::string base_name = self->get_var( "base_furn", "f_snare" );
+        std::string base_name = self->get_var( "base_furn", "f_wire_snare" );
 
         // Check if this is a TINY trap (instant processing)
         const furn_t &furn_type = *furn_at;
         bool is_tiny = furn_type.has_flag( "TINY" );
 
         if( is_tiny ) {
+            // Reset to empty immediately
+            here.furn_set( pos, furn_str_id( base_name + "_empty" ) );
             // TINY traps process immediately - run hunting check and place corpse
             map_stack items = here.i_at( pos );
             item *bait_item = nullptr;
@@ -10159,8 +10161,6 @@ detached_ptr<item> item::process_fake_snare( detached_ptr<item> &&self, player *
                 here.i_clear( pos );
             }
 
-            // Reset to empty immediately
-            here.furn_set( pos, furn_str_id( base_name + "_empty" ) );
         } else {
             // Normal traps: set to _closed state for player to examine later
             here.furn_set( pos, furn_str_id( base_name + "_closed" ) );

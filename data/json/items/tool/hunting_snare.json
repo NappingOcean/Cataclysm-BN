@@ -16,7 +16,7 @@
   },
   {
     "id": "rattrap",
-    "type": "TOOL",
+    "type": "GENERIC",
     "category": "deployables",
     "name": { "str": "rat trap" },
     "description": "A small spring-loaded trap designed to catch rats. Activate it to set it up.",
@@ -31,12 +31,12 @@
   },
   {
     "id": "large_rattrap",
-    "type": "TOOL",
+    "type": "GENERIC",
     "category": "deployables",
     "name": { "str": "large rat trap" },
-    "description": "A large spring-loaded trap designed to catch bigger rodents. Activate it to set it up.",
-    "weight": "500 g",
-    "volume": "1500 ml",
+    "description": "A rattrap but ridiculously larger, designed to catch bigger rodents. Activate it to set it up.",
+    "weight": "1200 g",
+    "volume": "2000 ml",
     "price": 1200,
     "price_postapoc": 300,
     "material": [ "iron", "wood" ],
@@ -46,7 +46,7 @@
   },
   {
     "id": "beartrap_hunting",
-    "type": "TOOL",
+    "type": "GENERIC",
     "category": "deployables",
     "name": { "str": "hunting bear trap" },
     "description": "A large spring-loaded pair of jaws connected to a sensitive pressure plate. This is altered from a standard bear trap to be more effective for hunting. Activate it to set it up.",
@@ -54,7 +54,7 @@
     "material": [ "steel" ],
     "symbol": "^",
     "color": "dark_gray",
-    "use_action": { "type": "deploy_furn", "furn_type": "f_beartrap_empty" }
+    "use_action": { "type": "deploy_furn", "furn_type": "f_beartrap_hunting_empty" }
   },
   {
     "id": "test_bait",

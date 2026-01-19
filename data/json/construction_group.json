@@ -1671,27 +1671,17 @@
   },
   {
     "type": "construction_group",
+    "id": "set_deadfall",
+    "name": "Set Deadfall"
+  },
+  {
+    "type": "construction_group",
     "id": "set_rattrap",
     "name": "Set Rattrap"
   },
   {
     "type": "construction_group",
-    "id": "",
-    "name": ""
-  },
-  {
-    "type": "construction_group",
-    "id": "",
-    "name": ""
-  },
-  {
-    "type": "construction_group",
-    "id": "",
-    "name": ""
-  },
-  {
-    "type": "construction_group",
-    "id": "",
-    "name": ""
+    "id": "set_spiked_pit_trap",
+    "name": "Set Spiked Pit Trap"
   }
 ]

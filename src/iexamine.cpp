@@ -6953,7 +6953,7 @@ void iexamine::harvest_snare( player &p, const tripoint &examp )
     }
 
     // Extract stored data
-    std::string base_furn = data_item->get_var( "base_furn", "f_snare" );
+    std::string base_furn = data_item->get_var( "base_furn", "f_wire_snare" );
     int proximity_penalty = data_item->get_var( "proximity_penalty", 0 );
     time_point snared_time = time_point::from_turn( data_item->get_var( "snared_time",
                              to_turn<int>( calendar::turn ) ) );
