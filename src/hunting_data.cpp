@@ -14,6 +14,7 @@
 #include "overmap.h"
 #include "overmapbuffer.h"
 #include "player.h"
+#include "requirements.h"
 #include "rng.h"
 #include "skill.h"
 #include "translations.h"
@@ -55,6 +56,48 @@ void habitat_prey_data::deserialize( const JsonObject &jo )
     }
 }
 
+// spawn_item_choice implementation
+void spawn_item_choice::deserialize( const JsonObject &jo )
+{
+    if( jo.has_string( "item" ) ) {
+        jo.read( "item", item );
+        jo.read( "count", count );
+    } else if( jo.has_array( "item" ) ) {
+        // Support ["item_id", count] format
+        JsonArray arr = jo.get_array( "item" );
+        item = itype_id( arr.get_string( 0 ) );
+        if( arr.size() > 1 ) {
+            count = arr.get_int( 1 );
+        }
+    }
+}
+
+// after_trigger_data implementation
+void after_trigger_data::deserialize( const JsonObject &jo )
+{
+    if( jo.has_string( "furniture" ) ) {
+        furniture = furn_str_id( jo.get_string( "furniture" ) );
+    }
+
+    if( jo.has_array( "items" ) ) {
+        for( JsonArray choice_group : jo.get_array( "items" ) ) {
+            std::vector<spawn_item_choice> choices;
+            for( JsonArray item_data : choice_group ) {
+                spawn_item_choice choice;
+                if( item_data.size() >= 2 ) {
+                    choice.item = itype_id( item_data.get_string( 0 ) );
+                    choice.count = item_data.get_int( 1 );
+                } else if( item_data.size() == 1 ) {
+                    choice.item = itype_id( item_data.get_string( 0 ) );
+                    choice.count = 1;
+                }
+                choices.push_back( choice );
+            }
+            items.push_back( choices );
+        }
+    }
+}
+
 // snaring_hunting_data implementation
 void snaring_hunting_data::load( const JsonObject &jo, const std::string & )
 {
@@ -73,6 +116,29 @@ void snaring_hunting_data::deserialize( const JsonObject &jo )
             data.deserialize( habitat_jo );
             habitats[member.name()] = data;
         }
+    }
+
+    // Optional fields
+    if( jo.has_string( "req_id_for_setup" ) ) {
+        req_id_for_setup = requirement_id( jo.get_string( "req_id_for_setup" ) );
+    }
+    if( jo.has_string( "trigger_sound" ) ) {
+        trigger_sound = jo.get_string( "trigger_sound" );
+    }
+    if( jo.has_int( "trigger_volume" ) ) {
+        trigger_volume = jo.get_int( "trigger_volume" );
+    }
+    if( jo.has_member( "after_trigger" ) ) {
+        after_trigger_data data;
+        if( jo.has_string( "after_trigger" ) ) {
+            // Simple string format: just furniture
+            data.furniture = furn_str_id( jo.get_string( "after_trigger" ) );
+        } else if( jo.has_object( "after_trigger" ) ) {
+            // Object format: furniture + items
+            JsonObject at_obj = jo.get_object( "after_trigger" );
+            data.deserialize( at_obj );
+        }
+        after_trigger = data;
     }
 }
 

@@ -6893,6 +6893,27 @@ void iexamine::bait_snare( player &p, const tripoint &examp )
     // Get base furniture name
     std::string base_name = furn_str.substr( 0, furn_str.length() - 6 );
 
+    // Check for setup requirements (besides bait)
+    const hunting::snaring_hunting_data *hd = hunting::find_hunting_data_for_furniture( examp );
+    if( hd && hd->req_id_for_setup.has_value() ) {
+        const requirement_data &reqs = hd->req_id_for_setup.value().obj();
+
+        // Check if player can fulfill requirements
+        if( !reqs.can_make_with_inventory( p.crafting_inventory(), is_crafting_component ) ) {
+            std::string missing = reqs.list_missing();
+            add_msg( m_info, _( "You need the following to set this trap:\n%s" ), missing );
+            return;
+        }
+
+        // Consume requirements
+        for( const auto &comp_list : reqs.get_components() ) {
+            p.consume_items( comp_list, 1, is_crafting_component );
+        }
+        for( const auto &tool_list : reqs.get_tools() ) {
+            p.consume_tools( tool_list, 1 );
+        }
+    }
+
     // Create fake tracker item (for time tracking only)
     detached_ptr<item> fake = item::spawn( "fake_snare_bait", calendar::turn );
     const int bait_counter = to_turns<int>( time_duration::from_hours( rng( 4, 8 ) ) );
@@ -6959,6 +6980,9 @@ void iexamine::harvest_snare( player &p, const tripoint &examp )
                              to_turn<int>( calendar::turn ) ) );
     std::vector<std::string> bait_flags_str = hunting::extract_bait_types( data_item );
 
+    // Get hunting_data for after_trigger handling
+    const hunting::snaring_hunting_data *hd = hunting::find_hunting_data_for_furniture( examp );
+
     // Process snare catch (check + generate corpse)
     hunting::snare_catch_result catch_result = hunting::process_snare_catch( examp, bait_flags_str,
             p, proximity_penalty, snared_time );
@@ -6966,7 +6990,52 @@ void iexamine::harvest_snare( player &p, const tripoint &examp )
     // Remove all items (bait consumed)
     items_here.clear();
 
-    // Process results
+    // Reset furniture based on after_trigger or skill check - DO THIS FIRST to remove NOITEM flag
+    if( hd && hd->after_trigger.has_value() ) {
+        const hunting::after_trigger_data &at_data = hd->after_trigger.value();
+
+        // Set furniture (default to *_empty if not specified)
+        furn_str_id target_furn = at_data.furniture.has_value() ?
+                                  at_data.furniture.value() : furn_str_id( base_furn + "_empty" );
+        here.furn_set( examp, target_furn );
+
+        // Spawn items from choice groups
+        for( const auto &choice_group : at_data.items ) {
+            if( !choice_group.empty() ) {
+                // Pick random choice from group (or first if only one)
+                const hunting::spawn_item_choice &chosen = random_entry( choice_group );
+                detached_ptr<item> spawned = item::spawn( chosen.item, calendar::turn, chosen.count );
+                here.add_item_or_charges( examp, std::move( spawned ) );
+            }
+        }
+    } else {
+        // Default behavior: chance to collapse based on trapping skill
+        int const skill_level = p.get_skill_level( skill_trapping );
+        int const damage_chance = rng( 0, 5 );
+
+        if( damage_chance > skill_level + 2 ) {
+            // Try to bash the trap (may or may not succeed in destroying it)
+            bash_params params{
+                p.get_str(), false, false, false,
+                static_cast<float>( rng_float( 0, 1.0f ) ), false
+            };
+            bash_results results = here.bash_ter_furn( examp, params );
+
+            if( results.success ) {
+                // Trap was actually destroyed
+                add_msg( m_bad, _( "You damaged the snare while harvesting it, and it breaks." ) );
+            } else {
+                // Bash failed, trap survives but player nearly broke it
+                add_msg( m_warning, _( "You nearly damaged the snare, but managed to recover it." ) );
+                here.furn_set( examp, furn_str_id( base_furn + "_empty" ) );
+            }
+        } else {
+            // Skillful harvest - no damage
+            here.furn_set( examp, furn_str_id( base_furn + "_empty" ) );
+        }
+    }
+
+    // NOW process results and spawn corpse after furniture has been changed
     if( catch_result.hunt_result.success && catch_result.corpse ) {
         add_msg( m_good, catch_result.hunt_result.message );
         here.add_item_or_charges( examp, std::move( catch_result.corpse ) );
@@ -6976,38 +7045,6 @@ void iexamine::harvest_snare( player &p, const tripoint &examp )
         add_msg( m_neutral, catch_result.hunt_result.message );
         p.practice( skill_trapping, 5 );
         p.practice( skill_survival, 2 );
-    }
-
-    // Reset furniture to empty trap
-    // Chance to collapse the snare based on trapping skill
-    int const skill_level = p.get_skill_level( skill_trapping );
-    int const damage_chance = rng( 0, 5 );
-
-    if( damage_chance > skill_level + 2 ) {
-        // Try to bash the trap (may or may not succeed in destroying it)
-        // strength: use player's strength to determine if trap actually breaks
-        // silent: false (make sound)
-        // destroy: false (use normal bash mechanics)
-        // bash_floor: false (only bash furniture)
-        // roll: random value for bash resistance interpolation
-        // bashing_from_above: false (normal bash)
-        bash_params params{
-            p.get_str(), false, false, false,
-            static_cast<float>( rng_float( 0, 1.0f ) ), false
-        };
-        bash_results results = here.bash_ter_furn( examp, params );
-
-        if( results.success ) {
-            // Trap was actually destroyed
-            add_msg( m_bad, _( "You damaged the snare while harvesting it, and it breaks." ) );
-        } else {
-            // Bash failed, trap survives but player nearly broke it
-            add_msg( m_warning, _( "You nearly damaged the snare, but managed to recover it." ) );
-            here.furn_set( examp, furn_str_id( base_furn + "_empty" ) );
-        }
-    } else {
-        // Skillful harvest - no damage
-        here.furn_set( examp, furn_str_id( base_furn + "_empty" ) );
     }
     p.mod_moves( -to_moves<int>( 5_seconds ) );
 }

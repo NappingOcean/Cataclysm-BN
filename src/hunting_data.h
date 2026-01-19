@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -49,10 +50,32 @@ struct habitat_prey_data {
     void deserialize( const JsonObject &jo );
 };
 
+// Single item choice for after_trigger spawning
+struct spawn_item_choice {
+    itype_id item;
+    int count = 1;
+
+    void deserialize( const JsonObject &jo );
+};
+
+// After trigger data: furniture + items to spawn
+struct after_trigger_data {
+    std::optional<furn_str_id> furniture; // Furniture to set (f_null = remove furniture)
+    std::vector<std::vector<spawn_item_choice>> items; // Choice groups: pick one from each group
+
+    void deserialize( const JsonObject &jo );
+};
+
 // Main hunting data structure
 struct snaring_hunting_data {
     string_id<snaring_hunting_data> id; // Furniture base name (e.g., "f_wire_snare")
     std::map<std::string, habitat_prey_data> habitats; // ter_str_id -> prey data
+
+    // Optional fields for trap mechanics
+    std::optional<requirement_id> req_id_for_setup; // Components needed to set trap (besides bait)
+    std::optional<std::string> trigger_sound; // Sound when trap triggers
+    std::optional<int> trigger_volume; // Volume of trigger sound
+    std::optional<after_trigger_data> after_trigger; // Furniture + items after trigger
 
     bool was_loaded = false;
     void load( const JsonObject &jo, const std::string &src );

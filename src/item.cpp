@@ -10115,17 +10115,30 @@ detached_ptr<item> item::process_fake_snare( detached_ptr<item> &&self, player *
     if( to_turns<int>( self->age() ) >= self->get_var( "bait_counter", 0 ) ||
         self->item_counter == 0 ) {
         // Trigger the snare!
-        sounds::sound( pos, 10, sounds::sound_t::combat, _( "SNAP!" ), false, "trap", "bear_trap" );
-
         std::string base_name = self->get_var( "base_furn", "f_wire_snare" );
+
+        // Get hunting_data for trigger sound/volume
+        const hunting::snaring_hunting_data *hd = hunting::find_hunting_data_for_furniture( pos );
+        std::string sound_text = _( "SNAP!" );
+        int sound_volume = 10;
+
+        if( hd ) {
+            if( hd->trigger_sound.has_value() ) {
+                sound_text = hd->trigger_sound.value();
+            }
+            if( hd->trigger_volume.has_value() ) {
+                sound_volume = hd->trigger_volume.value();
+            }
+        }
+
+        sounds::sound( pos, sound_volume, sounds::sound_t::combat, sound_text, false, "trap",
+                       "bear_trap" );
 
         // Check if this is a TINY trap (instant processing)
         const furn_t &furn_type = *furn_at;
         bool is_tiny = furn_type.has_flag( "TINY" );
 
         if( is_tiny ) {
-            // Reset to empty immediately
-            here.furn_set( pos, furn_str_id( base_name + "_empty" ) );
             // TINY traps process immediately - run hunting check and place corpse
             map_stack items = here.i_at( pos );
             item *bait_item = nullptr;
@@ -10138,6 +10151,7 @@ detached_ptr<item> item::process_fake_snare( detached_ptr<item> &&self, player *
                 }
             }
 
+            detached_ptr<item> caught_corpse;
             if( bait_item ) {
                 // Extract hunting data
                 std::vector<std::string> bait_flags_str = hunting::extract_bait_types( bait_item );
@@ -10148,17 +10162,42 @@ detached_ptr<item> item::process_fake_snare( detached_ptr<item> &&self, player *
                 hunting::snare_catch_result catch_result = hunting::process_snare_catch(
                             pos, bait_flags_str, get_player_character(), proximity_penalty, snared_time );
 
-                // Clear items from map (bait consumed)
-                // Note: 'self' is already detached, so i_clear only removes bait items from map
-                here.i_clear( pos );
-
-                // Place corpse if successful
+                // Store corpse for later spawning (after furniture change)
                 if( catch_result.hunt_result.success && catch_result.corpse ) {
-                    here.add_item_or_charges( pos, std::move( catch_result.corpse ) );
+                    caught_corpse = std::move( catch_result.corpse );
+                }
+            }
+
+            // Clear items from map (bait consumed)
+            // Note: 'self' is already detached, so i_clear only removes bait items from map
+            here.i_clear( pos );
+
+            // Apply after_trigger logic - CHANGE FURNITURE FIRST to remove NOITEM flag
+            if( hd && hd->after_trigger.has_value() ) {
+                const hunting::after_trigger_data &at_data = hd->after_trigger.value();
+
+                // Set furniture (default to *_empty if not specified)
+                furn_str_id target_furn = at_data.furniture.has_value() ?
+                                          at_data.furniture.value() : furn_str_id( base_name + "_empty" );
+                here.furn_set( pos, target_furn );
+
+                // Spawn items from choice groups
+                for( const auto &choice_group : at_data.items ) {
+                    if( !choice_group.empty() ) {
+                        // Pick random choice from group
+                        const hunting::spawn_item_choice &chosen = random_entry( choice_group );
+                        detached_ptr<item> spawned = item::spawn( chosen.item, calendar::turn, chosen.count );
+                        here.add_item_or_charges( pos, std::move( spawned ) );
+                    }
                 }
             } else {
-                // No bait found, just clear
-                here.i_clear( pos );
+                // Default: Reset to empty
+                here.furn_set( pos, furn_str_id( base_name + "_empty" ) );
+            }
+
+            // NOW spawn the corpse after furniture has been changed
+            if( caught_corpse ) {
+                here.add_item_or_charges( pos, std::move( caught_corpse ) );
             }
 
         } else {
