@@ -59,15 +59,29 @@ void habitat_prey_data::deserialize( const JsonObject &jo )
 // spawn_item_choice implementation
 void spawn_item_choice::deserialize( const JsonObject &jo )
 {
-    if( jo.has_string( "item" ) ) {
-        jo.read( "item", item );
+    jo.read( "item", item );
+
+    // Support either "count" or "charges" like standard item spawn
+    // Can be single int or [min, max] array
+    if( jo.has_int( "count" ) ) {
         jo.read( "count", count );
-    } else if( jo.has_array( "item" ) ) {
-        // Support ["item_id", count] format
-        JsonArray arr = jo.get_array( "item" );
-        item = itype_id( arr.get_string( 0 ) );
-        if( arr.size() > 1 ) {
-            count = arr.get_int( 1 );
+    } else if( jo.has_array( "count" ) ) {
+        JsonArray arr = jo.get_array( "count" );
+        if( arr.size() >= 2 ) {
+            count = rng( arr.get_int( 0 ), arr.get_int( 1 ) );
+        } else if( arr.size() == 1 ) {
+            count = arr.get_int( 0 );
+        }
+    }
+
+    if( jo.has_int( "charges" ) ) {
+        jo.read( "charges", charges );
+    } else if( jo.has_array( "charges" ) ) {
+        JsonArray arr = jo.get_array( "charges" );
+        if( arr.size() >= 2 ) {
+            charges = rng( arr.get_int( 0 ), arr.get_int( 1 ) );
+        } else if( arr.size() == 1 ) {
+            charges = arr.get_int( 0 );
         }
     }
 }
@@ -86,15 +100,9 @@ void after_trigger_data::deserialize( const JsonObject &jo )
     if( jo.has_array( "items" ) ) {
         for( JsonArray choice_group : jo.get_array( "items" ) ) {
             std::vector<spawn_item_choice> choices;
-            for( JsonArray item_data : choice_group ) {
+            for( JsonObject item_obj : choice_group ) {
                 spawn_item_choice choice;
-                if( item_data.size() >= 2 ) {
-                    choice.item = itype_id( item_data.get_string( 0 ) );
-                    choice.count = item_data.get_int( 1 );
-                } else if( item_data.size() == 1 ) {
-                    choice.item = itype_id( item_data.get_string( 0 ) );
-                    choice.count = 1;
-                }
+                choice.deserialize( item_obj );
                 choices.push_back( choice );
             }
             items.push_back( choices );
@@ -158,6 +166,32 @@ void snaring_hunting_data::check() const
                               prey.prey.c_str(), prey_type, habitat_name, id.c_str() );
                 }
             }
+        }
+    }
+
+    // Check if OPEN_SNARE flag is consistent across *_set and *_empty
+    std::string base_name = id.str();
+    furn_str_id set_furn( base_name + "_set" );
+    furn_str_id empty_furn( base_name + "_empty" );
+    furn_str_id closed_furn( base_name + "_closed" );
+
+    if( set_furn.is_valid() && empty_furn.is_valid() ) {
+        const furn_t &set_obj = set_furn.obj();
+        const furn_t &empty_obj = empty_furn.obj();
+        bool set_has_open_snare = set_obj.has_flag( "OPEN_SNARE" );
+        bool empty_has_open_snare = empty_obj.has_flag( "OPEN_SNARE" );
+
+        // Both *_set and *_empty must have the same OPEN_SNARE flag state
+        if( set_has_open_snare != empty_has_open_snare ) {
+            debugmsg( "Hunting trap '%s': OPEN_SNARE flag mismatch between '%s' (%s) and '%s' (%s)",
+                      base_name, set_furn.c_str(), set_has_open_snare ? "has" : "missing",
+                      empty_furn.c_str(), empty_has_open_snare ? "has" : "missing" );
+        }
+
+        // Non-OPEN_SNARE traps must have *_closed furniture
+        if( !set_has_open_snare && !closed_furn.is_valid() ) {
+            debugmsg( "Hunting trap '%s' does not have OPEN_SNARE flag but missing '%s' furniture definition",
+                      base_name, closed_furn.c_str() );
         }
     }
 }
@@ -493,6 +527,44 @@ snare_catch_result process_snare_catch( const tripoint &pos,
     }
 
     return result;
+}
+
+// Helper function to apply after_trigger data
+auto apply_after_trigger( const tripoint &pos, const snaring_hunting_data *hd,
+                          const std::string &base_name ) -> void
+{
+    map &here = get_map();
+
+    if( hd && hd->after_trigger.has_value() ) {
+        const after_trigger_data &at_data = hd->after_trigger.value();
+
+        // Set terrain if specified
+        if( at_data.terrain.has_value() ) {
+            here.ter_set( pos, at_data.terrain.value() );
+        }
+
+        // Set furniture (default to *_empty if not specified)
+        furn_str_id target_furn = at_data.furniture.has_value() ?
+                                  at_data.furniture.value() : furn_str_id( base_name + "_empty" );
+        here.furn_set( pos, target_furn );
+
+        // Spawn items from choice groups
+        for( const auto &choice_group : at_data.items ) {
+            if( !choice_group.empty() ) {
+                const spawn_item_choice &chosen = random_entry( choice_group );
+                detached_ptr<item> spawned;
+                if( chosen.charges > 0 ) {
+                    spawned = item::spawn( chosen.item, calendar::turn, chosen.charges );
+                } else {
+                    spawned = item::spawn( chosen.item, calendar::turn, chosen.count );
+                }
+                here.add_item_or_charges( pos, std::move( spawned ) );
+            }
+        }
+    } else {
+        // Default: Reset to empty
+        here.furn_set( pos, furn_str_id( base_name + "_empty" ) );
+    }
 }
 
 } // namespace hunting

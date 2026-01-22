@@ -7016,32 +7016,7 @@ void iexamine::harvest_snare( player &p, const tripoint &examp )
     // Reset furniture and spawn items - DO THIS FIRST to remove NOITEM flag
     // Only if trap wasn't destroyed by skill check
     if( !trap_destroyed ) {
-        if( hd && hd->after_trigger.has_value() ) {
-            const hunting::after_trigger_data &at_data = hd->after_trigger.value();
-
-            // Set terrain if specified
-            if( at_data.terrain.has_value() ) {
-                here.ter_set( examp, at_data.terrain.value() );
-            }
-
-            // Set furniture (default to *_empty if not specified)
-            furn_str_id target_furn = at_data.furniture.has_value() ?
-                                      at_data.furniture.value() : furn_str_id( base_furn + "_empty" );
-            here.furn_set( examp, target_furn );
-
-            // Spawn items from choice groups
-            for( const auto &choice_group : at_data.items ) {
-                if( !choice_group.empty() ) {
-                    // Pick random choice from group (or first if only one)
-                    const hunting::spawn_item_choice &chosen = random_entry( choice_group );
-                    detached_ptr<item> spawned = item::spawn( chosen.item, calendar::turn, chosen.count );
-                    here.add_item_or_charges( examp, std::move( spawned ) );
-                }
-            }
-        } else {
-            // Default behavior: just reset to empty
-            here.furn_set( examp, furn_str_id( base_furn + "_empty" ) );
-        }
+        hunting::apply_after_trigger( examp, hd, base_furn );
     }
 
     // NOW process results and spawn corpse after furniture has been changed

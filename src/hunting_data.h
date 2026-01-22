@@ -54,6 +54,7 @@ struct habitat_prey_data {
 struct spawn_item_choice {
     itype_id item;
     int count = 1;
+    int charges = 0; // If > 0, use charges instead of count
 
     void deserialize( const JsonObject &jo );
 };
@@ -129,5 +130,9 @@ snare_catch_result process_snare_catch( const tripoint &pos,
 
 float calculate_skill_multiplier( const player &p );
 int calculate_presence_penalty( const tripoint &pos );
+
+// Helper function to apply after_trigger data (furniture, terrain, items)
+void apply_after_trigger( const tripoint &pos, const snaring_hunting_data *hd,
+                          const std::string &base_name );
 
 } // namespace hunting

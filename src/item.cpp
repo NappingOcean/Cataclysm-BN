@@ -165,6 +165,7 @@ static const itype_id itype_water_acid_weak( "water_acid_weak" );
 
 static const skill_id skill_survival( "survival" );
 static const skill_id skill_throw( "throw" );
+static const skill_id skill_trapping( "trapping" );
 static const skill_id skill_unarmed( "unarmed" );
 static const skill_id skill_weapon( "weapon" );
 
@@ -10111,6 +10112,7 @@ detached_ptr<item> item::process_fake_snare( detached_ptr<item> &&self, player *
             }
         }
     }
+
     // Check if timer expired
     if( to_turns<int>( self->age() ) >= self->get_var( "bait_counter", 0 ) ||
         self->item_counter == 0 ) {
@@ -10134,88 +10136,85 @@ detached_ptr<item> item::process_fake_snare( detached_ptr<item> &&self, player *
         sounds::sound( pos, sound_volume, sounds::sound_t::combat, sound_text, false, "trap",
                        "bear_trap" );
 
-        // Check if this is a TINY trap (instant processing)
-        const furn_t &furn_type = *furn_at;
-        bool is_tiny = furn_type.has_flag( "TINY" );
+        // Check if this is an OPEN_SNARE (open design trap)
+        const furn_t &current_furn = here.furn( pos ).obj();
+        bool is_open_snare = current_furn.has_flag( "OPEN_SNARE" );
 
-        if( is_tiny ) {
-            // TINY traps process immediately - run hunting check and place corpse
-            map_stack items = here.i_at( pos );
-            item *bait_item = nullptr;
-
-            // Find bait item
-            for( auto it : items ) {
-                if( !hunting::extract_bait_types( it ).empty() ) {
-                    bait_item = it;
-                    break;
-                }
+        // Find bait item on map
+        map_stack items = here.i_at( pos );
+        item *bait_item = nullptr;
+        for( auto it : items ) {
+            if( !hunting::extract_bait_types( it ).empty() ) {
+                bait_item = it;
+                break;
             }
+        }
 
-            detached_ptr<item> caught_corpse;
-            if( bait_item ) {
-                // Extract hunting data
-                std::vector<std::string> bait_flags_str = hunting::extract_bait_types( bait_item );
-                int proximity_penalty = self->get_var( "proximity_penalty", 0 );
-                time_point snared_time = calendar::turn;
+        // Process catch if we have bait
+        detached_ptr<item> caught_corpse;
+        bool catch_success = false;
 
-                // Process catch (no player interaction, use get_player_character)
-                hunting::snare_catch_result catch_result = hunting::process_snare_catch(
-                            pos, bait_flags_str, get_player_character(), proximity_penalty, snared_time );
+        if( bait_item ) {
+            std::vector<std::string> bait_flags_str = hunting::extract_bait_types( bait_item );
+            int proximity_penalty = self->get_var( "proximity_penalty", 0 );
+            time_point snared_time = calendar::turn;
 
-                // Store corpse for later spawning (after furniture change)
-                if( catch_result.hunt_result.success && catch_result.corpse ) {
-                    caught_corpse = std::move( catch_result.corpse );
-                }
+            hunting::snare_catch_result catch_result = hunting::process_snare_catch(
+                        pos, bait_flags_str, get_player_character(), proximity_penalty, snared_time );
+
+            catch_success = catch_result.hunt_result.success;
+            if( catch_success && catch_result.corpse ) {
+                caught_corpse = std::move( catch_result.corpse );
             }
+        }
 
-            // Clear items from map (bait consumed)
-            // Note: 'self' is already detached, so i_clear only removes bait items from map
-            here.i_clear( pos );
+        // Clear bait items from map (bait consumed)
+        here.i_clear( pos );
 
-            // Apply after_trigger logic - CHANGE FURNITURE FIRST to remove NOITEM flag
-            if( hd && hd->after_trigger.has_value() ) {
-                const hunting::after_trigger_data &at_data = hd->after_trigger.value();
+        if( is_open_snare ) {
+            // OPEN_SNARE: Process immediately with skill training
+            hunting::apply_after_trigger( pos, hd, base_name );
 
-                // Set terrain if specified
-                if( at_data.terrain.has_value() ) {
-                    here.ter_set( pos, at_data.terrain.value() );
-                }
-
-                // Set furniture (default to *_empty if not specified)
-                furn_str_id target_furn = at_data.furniture.has_value() ?
-                                          at_data.furniture.value() : furn_str_id( base_name + "_empty" );
-                here.furn_set( pos, target_furn );
-
-                // Spawn items from choice groups
-                for( const auto &choice_group : at_data.items ) {
-                    if( !choice_group.empty() ) {
-                        // Pick random choice from group
-                        const hunting::spawn_item_choice &chosen = random_entry( choice_group );
-                        detached_ptr<item> spawned = item::spawn( chosen.item, calendar::turn, chosen.count );
-                        here.add_item_or_charges( pos, std::move( spawned ) );
-                    }
-                }
-            } else {
-                // Default: Reset to empty
-                here.furn_set( pos, furn_str_id( base_name + "_empty" ) );
-            }
-
-            // NOW spawn the corpse after furniture has been changed
+            // Spawn corpse and give skill training
             if( caught_corpse ) {
                 here.add_item_or_charges( pos, std::move( caught_corpse ) );
+                Character &player = get_player_character();
+                player.practice( skill_trapping, 25 );
+                player.practice( skill_survival, 12 );
+            } else if( bait_item ) {
+                // Failed catch - still give some practice
+                Character &player = get_player_character();
+                player.practice( skill_trapping, 5 );
+                player.practice( skill_survival, 2 );
+            }
+        } else {
+            // Closed trap: Set to _closed state and store data for later examination
+            here.furn_set( pos, furn_str_id( base_name + "_closed" ) );
+
+            if( bait_item ) {
+                // Store hunting result data in bait item for harvest_snare to use
+                // Find the bait item on the map (after i_clear, we need to add it back)
+                detached_ptr<item> data_item = item::spawn( "fake_snare_data", calendar::turn );
+                data_item->set_var( "base_furn", base_name );
+                data_item->set_var( "proximity_penalty", self->get_var( "proximity_penalty", 0 ) );
+                data_item->set_var( "snared_time", to_turn<int>( calendar::turn ) );
+
+                // Store bait flags
+                std::string bait_types_str;
+                for( const auto &flag : hunting::extract_bait_types( bait_item ) ) {
+                    if( !bait_types_str.empty() ) {
+                        bait_types_str += ",";
+                    }
+                    bait_types_str += flag;
+                }
+                data_item->set_var( "bait_types", bait_types_str );
+
+                here.add_item( pos, std::move( data_item ) );
             }
 
-        } else {
-            // Normal traps: set to _closed state for player to examine later
-            here.furn_set( pos, furn_str_id( base_name + "_closed" ) );
-            map_stack items = here.i_at( pos );
-            for( auto it : items ) {
-                if( !hunting::extract_bait_types( it ).empty() ) {
-                    it->set_var( "base_furn", base_name );
-                    it->set_var( "proximity_penalty", self->get_var( "proximity_penalty", 0 ) );
-                    it->set_var( "snared_time", to_turn<int>( calendar::turn ) );
-                    break;
-                }
+            // Also spawn corpse if caught (will be processed by harvest_snare)
+            if( caught_corpse ) {
+                here.add_item( pos, std::move( caught_corpse ) );
             }
         }
 
