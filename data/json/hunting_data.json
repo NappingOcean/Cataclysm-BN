@@ -50,6 +50,8 @@
     "type": "hunting_data",
     "id": "f_wire_snare",
     "//": "Wire snare - good for small omnivores like rats and squirrels",
+    "trigger_sound": "*snap*",
+    "trigger_volume": 3,
     "habitats": {
       "forest": {
         "SMALL_GAME_OMNIVORE": [
@@ -82,6 +84,9 @@
     "type": "hunting_data",
     "id": "f_rattrap",
     "//": "Small rattrap - specialized for catching rats and small rodents (TINY flag)",
+    "trigger_sound": "snap!",
+    "trigger_volume": 5,
+    "after_trigger": { "furniture": "f_rattrap_empty", "items": [  ] },
     "habitats": {
       "forest": {
         "SMALL_GAME_OMNIVORE": [
@@ -98,6 +103,8 @@
     "type": "hunting_data",
     "id": "f_big_rattrap",
     "//": "Large rattrap - catches bigger rodents and small game (TINY flag)",
+    "trigger_sound": "SNAP!",
+    "trigger_volume": 10,
     "habitats": {
       "forest": {
         "SMALL_GAME_OMNIVORE": [
@@ -130,6 +137,8 @@
     "type": "hunting_data",
     "id": "f_deadfall",
     "//": "Deadfall trap using small boulder - effective for small game only (boulder_small: required_str 10, TINY flag)",
+    "trigger_sound": "thud!",
+    "trigger_volume": 12,
     "habitats": {
       "forest": {
         "SMALL_GAME_HERBIVORE": [
@@ -171,6 +180,8 @@
     "type": "hunting_data",
     "id": "f_spiked_pit_trap",
     "//": "Spiked pit trap - dangerous trap for medium to large game (TINY flag for instant processing)",
+    "trigger_sound": "crash!",
+    "trigger_volume": 15,
     "habitats": {
       "forest": {
         "LARGE_GAME_HERBIVORE": [ { "prey": "mon_deer", "weight": 80 }, { "prey": "mon_fox_red", "weight": 60 }, { "prey": "none", "weight": 40 } ]
@@ -186,6 +197,8 @@
     "type": "hunting_data",
     "id": "f_beartrap_hunting",
     "//": "Bear trap for hunting - specialized for large game (TINY flag)",
+    "trigger_sound": "CLANG!",
+    "trigger_volume": 20,
     "habitats": {
       "forest": {
         "LARGE_GAME_HERBIVORE": [ { "prey": "mon_deer", "weight": 120 }, { "prey": "mon_fox_red", "weight": 50 }, { "prey": "none", "weight": 20 } ]
