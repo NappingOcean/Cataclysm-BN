@@ -10176,6 +10176,11 @@ detached_ptr<item> item::process_fake_snare( detached_ptr<item> &&self, player *
             if( hd && hd->after_trigger.has_value() ) {
                 const hunting::after_trigger_data &at_data = hd->after_trigger.value();
 
+                // Set terrain if specified
+                if( at_data.terrain.has_value() ) {
+                    here.ter_set( pos, at_data.terrain.value() );
+                }
+
                 // Set furniture (default to *_empty if not specified)
                 furn_str_id target_furn = at_data.furniture.has_value() ?
                                           at_data.furniture.value() : furn_str_id( base_name + "_empty" );

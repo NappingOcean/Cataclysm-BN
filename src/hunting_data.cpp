@@ -79,6 +79,10 @@ void after_trigger_data::deserialize( const JsonObject &jo )
         furniture = furn_str_id( jo.get_string( "furniture" ) );
     }
 
+    if( jo.has_string( "terrain" ) ) {
+        terrain = ter_str_id( jo.get_string( "terrain" ) );
+    }
+
     if( jo.has_array( "items" ) ) {
         for( JsonArray choice_group : jo.get_array( "items" ) ) {
             std::vector<spawn_item_choice> choices;

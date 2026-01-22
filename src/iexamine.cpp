@@ -6990,47 +6990,56 @@ void iexamine::harvest_snare( player &p, const tripoint &examp )
     // Remove all items (bait consumed)
     items_here.clear();
 
-    // Reset furniture based on after_trigger or skill check - DO THIS FIRST to remove NOITEM flag
-    if( hd && hd->after_trigger.has_value() ) {
-        const hunting::after_trigger_data &at_data = hd->after_trigger.value();
+    // Check skill to determine if trap gets damaged - applies to ALL traps
+    int const skill_level = p.get_skill_level( skill_trapping );
+    int const damage_chance = rng( 0, 5 );
+    bool trap_destroyed = false;
 
-        // Set furniture (default to *_empty if not specified)
-        furn_str_id target_furn = at_data.furniture.has_value() ?
-                                  at_data.furniture.value() : furn_str_id( base_furn + "_empty" );
-        here.furn_set( examp, target_furn );
+    if( damage_chance > skill_level + 2 ) {
+        // Try to bash the trap (may or may not succeed in destroying it)
+        bash_params params{
+            p.get_str(), false, false, false,
+            static_cast<float>( rng_float( 0, 1.0f ) ), false
+        };
+        bash_results results = here.bash_ter_furn( examp, params );
 
-        // Spawn items from choice groups
-        for( const auto &choice_group : at_data.items ) {
-            if( !choice_group.empty() ) {
-                // Pick random choice from group (or first if only one)
-                const hunting::spawn_item_choice &chosen = random_entry( choice_group );
-                detached_ptr<item> spawned = item::spawn( chosen.item, calendar::turn, chosen.count );
-                here.add_item_or_charges( examp, std::move( spawned ) );
-            }
+        if( results.success ) {
+            // Trap was actually destroyed
+            add_msg( m_bad, _( "You damaged the snare while harvesting it, and it breaks." ) );
+            trap_destroyed = true;
+        } else {
+            // Bash failed, trap survives but player nearly broke it
+            add_msg( m_warning, _( "You nearly damaged the snare, but managed to recover it." ) );
         }
-    } else {
-        // Default behavior: chance to collapse based on trapping skill
-        int const skill_level = p.get_skill_level( skill_trapping );
-        int const damage_chance = rng( 0, 5 );
+    }
 
-        if( damage_chance > skill_level + 2 ) {
-            // Try to bash the trap (may or may not succeed in destroying it)
-            bash_params params{
-                p.get_str(), false, false, false,
-                static_cast<float>( rng_float( 0, 1.0f ) ), false
-            };
-            bash_results results = here.bash_ter_furn( examp, params );
+    // Reset furniture and spawn items - DO THIS FIRST to remove NOITEM flag
+    // Only if trap wasn't destroyed by skill check
+    if( !trap_destroyed ) {
+        if( hd && hd->after_trigger.has_value() ) {
+            const hunting::after_trigger_data &at_data = hd->after_trigger.value();
 
-            if( results.success ) {
-                // Trap was actually destroyed
-                add_msg( m_bad, _( "You damaged the snare while harvesting it, and it breaks." ) );
-            } else {
-                // Bash failed, trap survives but player nearly broke it
-                add_msg( m_warning, _( "You nearly damaged the snare, but managed to recover it." ) );
-                here.furn_set( examp, furn_str_id( base_furn + "_empty" ) );
+            // Set terrain if specified
+            if( at_data.terrain.has_value() ) {
+                here.ter_set( examp, at_data.terrain.value() );
+            }
+
+            // Set furniture (default to *_empty if not specified)
+            furn_str_id target_furn = at_data.furniture.has_value() ?
+                                      at_data.furniture.value() : furn_str_id( base_furn + "_empty" );
+            here.furn_set( examp, target_furn );
+
+            // Spawn items from choice groups
+            for( const auto &choice_group : at_data.items ) {
+                if( !choice_group.empty() ) {
+                    // Pick random choice from group (or first if only one)
+                    const hunting::spawn_item_choice &chosen = random_entry( choice_group );
+                    detached_ptr<item> spawned = item::spawn( chosen.item, calendar::turn, chosen.count );
+                    here.add_item_or_charges( examp, std::move( spawned ) );
+                }
             }
         } else {
-            // Skillful harvest - no damage
+            // Default behavior: just reset to empty
             here.furn_set( examp, furn_str_id( base_furn + "_empty" ) );
         }
     }

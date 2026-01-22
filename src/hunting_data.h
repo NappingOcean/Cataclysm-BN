@@ -58,9 +58,10 @@ struct spawn_item_choice {
     void deserialize( const JsonObject &jo );
 };
 
-// After trigger data: furniture + items to spawn
+// After trigger data: furniture + terrain + items to spawn
 struct after_trigger_data {
     std::optional<furn_str_id> furniture; // Furniture to set (f_null = remove furniture)
+    std::optional<ter_str_id> terrain; // Terrain to set (optional)
     std::vector<std::vector<spawn_item_choice>> items; // Choice groups: pick one from each group
 
     void deserialize( const JsonObject &jo );
