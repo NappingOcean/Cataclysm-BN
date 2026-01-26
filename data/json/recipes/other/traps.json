@@ -281,7 +281,7 @@
   },
   {
     "type": "recipe",
-    "result": "large_rattrap",
+    "result": "big_rattrap",
     "category": "CC_OTHER",
     "subcategory": "CSC_OTHER_TRAPS",
     "skill_used": "traps",

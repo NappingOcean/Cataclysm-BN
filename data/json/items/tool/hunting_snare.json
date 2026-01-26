@@ -30,7 +30,7 @@
     "use_action": { "type": "deploy_furn", "furn_type": "f_rattrap_empty" }
   },
   {
-    "id": "large_rattrap",
+    "id": "big_rattrap",
     "type": "GENERIC",
     "category": "deployables",
     "name": { "str": "large rat trap" },

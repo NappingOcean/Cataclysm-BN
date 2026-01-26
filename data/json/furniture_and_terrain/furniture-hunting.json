@@ -8,7 +8,7 @@
     "color": "light_gray",
     "move_cost_mod": 0,
     "required_str": -1,
-    "flags": [ "TRANSPARENT", "EASY_DECONSTRUCT" ],
+    "flags": [ "TRANSPARENT", "EASY_DECONSTRUCT", "OPEN_SNARE" ],
     "examine_action": "hunting_snare",
     "deconstruct": { "items": [ { "item": "wire", "count": 4 }, { "item": "stick", "count": 1 } ] },
     "bash": {
@@ -28,26 +28,7 @@
     "color": "yellow",
     "move_cost_mod": 0,
     "required_str": -1,
-    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM" ],
-    "examine_action": "hunting_snare",
-    "bash": {
-      "str_min": 4,
-      "str_max": 12,
-      "sound": "snap!",
-      "sound_fail": "whack!",
-      "items": [ { "item": "scrap", "count": [ 1, 2 ] } ]
-    }
-  },
-  {
-    "type": "furniture",
-    "id": "f_wire_snare_closed",
-    "name": "triggered wire snare",
-    "description": "A wire snare that has been triggered. Check it to see what you caught.",
-    "symbol": "^",
-    "color": "green",
-    "move_cost_mod": 0,
-    "required_str": -1,
-    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM" ],
+    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM", "OPEN_SNARE" ],
     "examine_action": "hunting_snare",
     "bash": {
       "str_min": 4,
@@ -66,7 +47,7 @@
     "color": "brown",
     "move_cost_mod": 0,
     "required_str": -1,
-    "flags": [ "TRANSPARENT", "EASY_DECONSTRUCT", "TINY" ],
+    "flags": [ "TRANSPARENT", "EASY_DECONSTRUCT", "TINY", "OPEN_SNARE" ],
     "examine_action": "hunting_snare",
     "deconstruct": { "items": [ { "item": "rattrap", "count": 1 } ] },
     "bash": {
@@ -86,26 +67,7 @@
     "color": "yellow",
     "move_cost_mod": 0,
     "required_str": -1,
-    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM", "TINY" ],
-    "examine_action": "hunting_snare",
-    "bash": {
-      "str_min": 2,
-      "str_max": 8,
-      "sound": "snap!",
-      "sound_fail": "whack!",
-      "items": [ { "item": "scrap", "count": [ 0, 1 ] }, { "item": "splinter", "count": 2 } ]
-    }
-  },
-  {
-    "type": "furniture",
-    "id": "f_rattrap_closed",
-    "name": "triggered rattrap",
-    "description": "A rattrap that has been triggered. Check it to see what you caught.",
-    "symbol": "^",
-    "color": "green",
-    "move_cost_mod": 0,
-    "required_str": -1,
-    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM", "TINY" ],
+    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM", "TINY", "OPEN_SNARE" ],
     "examine_action": "hunting_snare",
     "bash": {
       "str_min": 2,
@@ -122,11 +84,11 @@
     "description": "Larger version of a rattrap, designed to catch bigger rodents or other small animals.",
     "symbol": "^",
     "color": "brown",
-    "move_cost_mod": 0,
+    "move_cost_mod": -1,
     "required_str": -1,
-    "flags": [ "TRANSPARENT", "EASY_DECONSTRUCT", "TINY" ],
+    "flags": [ "TRANSPARENT", "EASY_DECONSTRUCT", "TINY", "OPEN_SNARE" ],
     "examine_action": "hunting_snare",
-    "deconstruct": { "items": [ { "item": "large_rattrap", "count": 1 } ] },
+    "deconstruct": { "items": [ { "item": "big_rattrap", "count": 1 } ] },
     "bash": {
       "str_min": 3,
       "str_max": 10,
@@ -142,28 +104,9 @@
     "description": "A large rattrap with bait, waiting for prey.",
     "symbol": "^",
     "color": "yellow",
-    "move_cost_mod": 0,
+    "move_cost_mod": -1,
     "required_str": -1,
-    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM", "TINY" ],
-    "examine_action": "hunting_snare",
-    "bash": {
-      "str_min": 3,
-      "str_max": 10,
-      "sound": "snap!",
-      "sound_fail": "whack!",
-      "items": [ { "item": "scrap", "count": [ 1, 2 ] }, { "item": "splinter", "count": 2 } ]
-    }
-  },
-  {
-    "type": "furniture",
-    "id": "f_big_rattrap_closed",
-    "name": "triggered large rattrap",
-    "description": "A large rattrap that has been triggered. Check it to see what you caught.",
-    "symbol": "^",
-    "color": "green",
-    "move_cost_mod": 0,
-    "required_str": -1,
-    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM", "TINY" ],
+    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM", "TINY", "OPEN_SNARE" ],
     "examine_action": "hunting_snare",
     "bash": {
       "str_min": 3,
@@ -180,9 +123,9 @@
     "description": "A trap made from a small boulder balanced to fall and crush prey when triggered.",
     "symbol": "^",
     "color": "light_gray",
-    "move_cost_mod": 0,
+    "move_cost_mod": -1,
     "required_str": -1,
-    "flags": [ "TRANSPARENT", "EASY_DECONSTRUCT" ],
+    "flags": [ "TRANSPARENT", "EASY_DECONSTRUCT", "TINY" ],
     "examine_action": "hunting_snare",
     "deconstruct": {
       "items": [ { "item": "stick", "count": 2 }, { "item": "string_6", "count": 2 } ],
@@ -204,9 +147,9 @@
     "description": "A deadfall trap set with bait, waiting for prey to trigger it.",
     "symbol": "^",
     "color": "yellow",
-    "move_cost_mod": 0,
+    "move_cost_mod": -1,
     "required_str": -1,
-    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM" ],
+    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM", "TINY" ],
     "examine_action": "hunting_snare",
     "bash": {
       "str_min": 0,
@@ -224,9 +167,9 @@
     "description": "A deadfall trap that has been triggered. Check it to see what you caught.",
     "symbol": "^",
     "color": "green",
-    "move_cost_mod": 0,
+    "move_cost_mod": -1,
     "required_str": -1,
-    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM" ],
+    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM", "TINY" ],
     "examine_action": "hunting_snare",
     "bash": {
       "str_min": 0,
@@ -244,7 +187,7 @@
     "description": "A spiked pit trap covered with a sheet and camouflaged to catch prey. Be careful not to fall in yourself!",
     "symbol": "^",
     "color": "light_gray",
-    "move_cost_mod": 0,
+    "move_cost_mod": -1,
     "required_str": -1,
     "flags": [ "TRANSPARENT", "EASY_DECONSTRUCT", "TINY" ],
     "examine_action": "hunting_snare",
@@ -264,7 +207,7 @@
     "description": "A spiked pit trap covered with a sheet and baited, waiting for prey to fall in.",
     "symbol": "^",
     "color": "yellow",
-    "move_cost_mod": 0,
+    "move_cost_mod": -1,
     "required_str": -1,
     "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM", "TINY" ],
     "examine_action": "hunting_snare",
@@ -283,7 +226,7 @@
     "description": "A spiked pit trap that has been triggered. Check it to see what you caught.",
     "symbol": "^",
     "color": "green",
-    "move_cost_mod": 0,
+    "move_cost_mod": -1,
     "required_str": -1,
     "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM", "TINY" ],
     "examine_action": "hunting_snare",
@@ -302,9 +245,9 @@
     "description": "A large spring-loaded trap adjusted to break the neck of bigger prey. Designed for deers or boars, not bears sadly.",
     "symbol": "^",
     "color": "dark_gray",
-    "move_cost_mod": 0,
+    "move_cost_mod": -1,
     "required_str": -1,
-    "flags": [ "TRANSPARENT", "EASY_DECONSTRUCT", "TINY" ],
+    "flags": [ "TRANSPARENT", "EASY_DECONSTRUCT", "TINY", "OPEN_SNARE" ],
     "examine_action": "hunting_snare",
     "deconstruct": { "items": [ { "item": "beartrap_hunting", "count": 1 } ] },
     "bash": {
@@ -322,9 +265,9 @@
     "description": "A hunting bear trap with bait, waiting for prey.",
     "symbol": "^",
     "color": "yellow",
-    "move_cost_mod": 0,
+    "move_cost_mod": -1,
     "required_str": -1,
-    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM", "TINY" ],
+    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM", "TINY", "OPEN_SNARE" ],
     "examine_action": "hunting_snare",
     "bash": {
       "str_min": 6,
@@ -336,21 +279,292 @@
   },
   {
     "type": "furniture",
-    "id": "f_beartrap_hunting_closed",
-    "name": "triggered hunting bear trap",
-    "description": "A hunting bear trap that has been triggered. Check it to see what you caught.",
+    "id": "f_crossbow_snare_vbox_empty",
+    "name": "empty crossbow snare",
+    "description": "A crossbow snare ready to be baited.",
+    "symbol": "^",
+    "color": "light_gray",
+    "move_cost_mod": -1,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT", "EASY_DECONSTRUCT", "CONTAINER" ],
+    "examine_action": "hunting_snare",
+    "deconstruct": { "items": [ { "item": "crossbow_trap", "count": 1 }, { "item": "frame", "count": 1 } ] },
+    "bash": {
+      "str_min": 5,
+      "str_max": 15,
+      "sound": "snap!",
+      "sound_fail": "whack!",
+      "items": [ { "item": "crossbow_trap", "count": [ 0, 1 ] }, { "item": "frame", "count": [ 0, 1 ] } ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "f_crossbow_snare_vbox_set",
+    "name": "baited crossbow snare",
+    "description": "A crossbow snare with bait, waiting for prey.",
+    "symbol": "^",
+    "color": "yellow",
+    "move_cost_mod": -1,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM" ],
+    "examine_action": "hunting_snare",
+    "bash": {
+      "str_min": 5,
+      "str_max": 15,
+      "sound": "snap!",
+      "sound_fail": "whack!",
+      "items": [ { "item": "crossbow_trap", "count": [ 0, 1 ] }, { "item": "frame", "count": [ 0, 1 ] } ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "f_crossbow_snare_vbox_closed",
+    "name": "triggered crossbow snare",
+    "description": "A crossbow snare that has been triggered. Check it to see what you caught.",
     "symbol": "^",
     "color": "green",
-    "move_cost_mod": 0,
+    "move_cost_mod": -1,
     "required_str": -1,
-    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM", "TINY" ],
+    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM" ],
+    "examine_action": "hunting_snare",
+    "bash": {
+      "str_min": 5,
+      "str_max": 15,
+      "sound": "snap!",
+      "sound_fail": "whack!",
+      "items": [ { "item": "crossbow_trap", "count": [ 0, 1 ] }, { "item": "frame", "count": [ 0, 1 ] } ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "f_crossbow_snare_wbox_empty",
+    "name": "empty wooden crossbow snare",
+    "description": "A crossbow snare with wooden frame, ready to be baited.",
+    "symbol": "^",
+    "color": "light_gray",
+    "move_cost_mod": -1,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT", "EASY_DECONSTRUCT", "CONTAINER" ],
+    "examine_action": "hunting_snare",
+    "deconstruct": { "items": [ { "item": "crossbow_trap", "count": 1 }, { "item": "frame_wood", "count": 1 } ] },
+    "bash": {
+      "str_min": 4,
+      "str_max": 12,
+      "sound": "snap!",
+      "sound_fail": "whack!",
+      "items": [ { "item": "crossbow_trap", "count": [ 0, 1 ] }, { "item": "2x4", "count": [ 2, 4 ] } ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "f_crossbow_snare_wbox_set",
+    "name": "baited wooden crossbow snare",
+    "description": "A wooden crossbow snare with bait, waiting for prey.",
+    "symbol": "^",
+    "color": "yellow",
+    "move_cost_mod": -1,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM" ],
+    "examine_action": "hunting_snare",
+    "bash": {
+      "str_min": 4,
+      "str_max": 12,
+      "sound": "snap!",
+      "sound_fail": "whack!",
+      "items": [ { "item": "crossbow_trap", "count": [ 0, 1 ] }, { "item": "2x4", "count": [ 2, 4 ] } ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "f_crossbow_snare_wbox_closed",
+    "name": "triggered wooden crossbow snare",
+    "description": "A wooden crossbow snare that has been triggered. Check it to see what you caught.",
+    "symbol": "^",
+    "color": "green",
+    "move_cost_mod": -1,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM" ],
+    "examine_action": "hunting_snare",
+    "bash": {
+      "str_min": 4,
+      "str_max": 12,
+      "sound": "snap!",
+      "sound_fail": "whack!",
+      "items": [ { "item": "crossbow_trap", "count": [ 0, 1 ] }, { "item": "2x4", "count": [ 2, 4 ] } ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "f_shotgun_snare_empty",
+    "name": "empty shotgun snare",
+    "description": "A pipe shotgun mounted in a vehicle box, designed to fire at prey's head at close range.",
+    "symbol": "^",
+    "color": "light_gray",
+    "move_cost_mod": -1,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT", "EASY_DECONSTRUCT", "CONTAINER" ],
+    "examine_action": "hunting_snare",
+    "deconstruct": { "items": [ { "item": "pipe_shotgun", "count": 1 }, { "item": "wire", "count": 2 }, { "item": "frame", "count": 1 } ] },
+    "bash": {
+      "str_min": 6,
+      "str_max": 18,
+      "sound": "crash!",
+      "sound_fail": "whack!",
+      "items": [
+        { "item": "pipe_shotgun", "count": [ 0, 1 ] },
+        { "item": "wire", "count": [ 0, 2 ] },
+        { "item": "scrap", "count": [ 2, 4 ] }
+      ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "f_shotgun_snare_set",
+    "name": "baited shotgun snare",
+    "description": "A shotgun snare loaded and baited, waiting for prey.",
+    "symbol": "^",
+    "color": "yellow",
+    "move_cost_mod": -1,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM" ],
     "examine_action": "hunting_snare",
     "bash": {
       "str_min": 6,
-      "str_max": 14,
-      "sound": "snap!",
+      "str_max": 18,
+      "sound": "crash!",
       "sound_fail": "whack!",
-      "items": [ { "item": "beartrap_hunting", "count": 1 } ]
+      "items": [ { "item": "pipe_shotgun", "count": [ 0, 1 ] }, { "item": "scrap", "count": [ 2, 4 ] } ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "f_shotgun_snare_closed",
+    "name": "triggered shotgun snare",
+    "description": "A shotgun snare that has been triggered. Check it to see what you caught.",
+    "symbol": "^",
+    "color": "green",
+    "move_cost_mod": -1,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM" ],
+    "examine_action": "hunting_snare",
+    "bash": {
+      "str_min": 6,
+      "str_max": 18,
+      "sound": "crash!",
+      "sound_fail": "whack!",
+      "items": [ { "item": "pipe_shotgun", "count": [ 0, 1 ] }, { "item": "scrap", "count": [ 2, 4 ] } ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "f_spear_snare_spring_empty",
+    "name": "empty spring spear snare",
+    "description": "A spring-loaded spear trap designed to impale prey reaching for bait.",
+    "symbol": "^",
+    "color": "light_gray",
+    "move_cost_mod": -1,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT", "EASY_DECONSTRUCT", "OPEN_SNARE" ],
+    "examine_action": "hunting_snare",
+    "deconstruct": {
+      "items": [
+        { "item": "spear_pipe", "count": 1 },
+        { "item": "metal_tank", "count": 1 },
+        { "item": "pipe", "count": 2 },
+        { "item": "wire", "count": 2 },
+        { "item": "spring", "count": 4 }
+      ]
+    },
+    "bash": {
+      "str_min": 8,
+      "str_max": 20,
+      "sound": "crash!",
+      "sound_fail": "clang!",
+      "items": [
+        { "item": "spear_pipe", "count": [ 0, 1 ] },
+        { "item": "pipe", "count": [ 1, 2 ] },
+        { "item": "spring", "count": [ 2, 4 ] },
+        { "item": "scrap", "count": [ 3, 6 ] }
+      ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "f_spear_snare_spring_set",
+    "name": "baited spring spear snare",
+    "description": "A spring spear trap cocked and baited, waiting for prey.",
+    "symbol": "^",
+    "color": "yellow",
+    "move_cost_mod": -1,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM", "OPEN_SNARE" ],
+    "examine_action": "hunting_snare",
+    "bash": {
+      "str_min": 8,
+      "str_max": 20,
+      "sound": "crash!",
+      "sound_fail": "clang!",
+      "items": [
+        { "item": "spear_pipe", "count": [ 0, 1 ] },
+        { "item": "pipe", "count": [ 1, 2 ] },
+        { "item": "scrap", "count": [ 3, 6 ] }
+      ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "f_spear_snare_pneumatic_empty",
+    "name": "empty pneumatic spear snare",
+    "description": "A pneumatic spear trap designed to impale prey reaching for bait.",
+    "symbol": "^",
+    "color": "light_gray",
+    "move_cost_mod": -1,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT", "EASY_DECONSTRUCT", "CONTAINER", "OPEN_SNARE" ],
+    "examine_action": "hunting_snare",
+    "deconstruct": {
+      "items": [
+        { "item": "spear_pipe", "count": 1 },
+        { "item": "metal_tank", "count": 1 },
+        { "item": "pipe", "count": 2 },
+        { "item": "wire", "count": 2 },
+        { "item": "rubber", "count": 2 }
+      ]
+    },
+    "bash": {
+      "str_min": 8,
+      "str_max": 20,
+      "sound": "crash!",
+      "sound_fail": "clang!",
+      "items": [
+        { "item": "spear_pipe", "count": [ 0, 1 ] },
+        { "item": "pipe", "count": [ 1, 2 ] },
+        { "item": "rubber", "count": [ 1, 2 ] },
+        { "item": "scrap", "count": [ 3, 6 ] }
+      ]
+    }
+  },
+  {
+    "type": "furniture",
+    "id": "f_spear_snare_pneumatic_set",
+    "name": "baited pneumatic spear snare",
+    "description": "A pneumatic spear trap pressurized and baited, waiting for prey.",
+    "symbol": "^",
+    "color": "yellow",
+    "move_cost_mod": -1,
+    "required_str": -1,
+    "flags": [ "TRANSPARENT", "CONTAINER", "SEALED", "NOITEM", "OPEN_SNARE" ],
+    "examine_action": "hunting_snare",
+    "bash": {
+      "str_min": 8,
+      "str_max": 20,
+      "sound": "crash!",
+      "sound_fail": "clang!",
+      "items": [
+        { "item": "spear_pipe", "count": [ 0, 1 ] },
+        { "item": "pipe", "count": [ 1, 2 ] },
+        { "item": "scrap", "count": [ 3, 6 ] }
+      ]
     }
   }
 ]
