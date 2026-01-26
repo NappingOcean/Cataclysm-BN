@@ -281,7 +281,7 @@
     }
   },
   {
-    "type": "requirements",
+    "type": "requirement",
     "id": "req_crossbow_snare",
     "components": [ [ [ "bolt_metal", 1 ] ] ]
   },
@@ -330,7 +330,7 @@
     "copy-from": "f_crossbow_snare_vbox"
   },
   {
-    "type": "requirements",
+    "type": "requirement",
     "id": "req_shotgun_snare",
     "components": [ [ [ "shot_00", 1 ], [ "shot_slug", 1 ], [ "shot_flechette", 1 ] ] ]
   },
@@ -391,7 +391,7 @@
     }
   },
   {
-    "type": "requirements",
+    "type": "requirement",
     "id": "req_spear_snare_pneumatic",
     "qualities": [ { "id": "PRESSURIZATION", "level": 1 } ]
   },
