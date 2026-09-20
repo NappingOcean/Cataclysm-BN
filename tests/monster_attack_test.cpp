@@ -161,6 +161,25 @@ TEST_CASE(
     }
 }
 
+TEST_CASE("a monster killed outright still refuses to dispatch", "[monster][special_attack]") {
+    clear_all_state();
+    const auto cleanup = on_out_of_scope([]() { clear_all_state(); });
+    get_avatar().setpos(map_local_to_abs(get_map(), tripoint_bub_ms(65, 60, 0)));
+    auto& mon = spawn_test_monster("mon_test_special_attack_pair", tripoint_bub_ms(60, 60, 0));
+    mon.set_special("alpha", 0);
+    REQUIRE(mon.special_attack_ready("alpha"));
+
+    // monster::die() only raises the dead flag and leaves hp alone. This is exactly what
+    // mattack::suicide leaves behind, and it is the case an is_dead_state() guard misses.
+    mon.die(nullptr);
+    REQUIRE(mon.is_dead());
+    REQUIRE_FALSE(mon.is_dead_state());
+
+    CHECK_FALSE(mon.use_special_attack("alpha"));
+    CHECK(mon.get_special_attack_cooldown("alpha") == 0);
+    CHECK_FALSE(mon.special_attack_spent_this_action());
+}
+
 TEST_CASE("special attack enable state is queryable and reversible", "[monster][special_attack]") {
     clear_all_state();
     const auto cleanup = on_out_of_scope([]() { clear_all_state(); });

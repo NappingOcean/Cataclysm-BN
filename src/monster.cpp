@@ -3173,10 +3173,12 @@ auto monster::special_attack_ready( const std::string &attack_id ) const -> bool
 
 auto monster::use_special_attack( const std::string &attack_id ) -> bool
 {
-    // Actors reach into the map and into their target; a corpse must not act. The stock
-    // scheduler is gated by the caller's is_dead() check, which a single Lua AI call does
+    // Actors reach into the map and into their target; a corpse must not act. This has to be
+    // is_dead(), not is_dead_state(): monster::die() only raises the dead flag, so an actor
+    // that kills outright without dealing damage (mattack::suicide) leaves hp positive. The
+    // stock scheduler is gated by the caller's is_dead() check, which one Lua AI call does
     // not repeat, so an actor that kills this monster must not be followed by another.
-    if( is_dead_state() || !special_attack_ready( attack_id ) ) {
+    if( is_dead() || !special_attack_ready( attack_id ) ) {
         return false;
     }
     // An actor can re-enter Lua (an attitude function, an on-hit hook) which can call back
@@ -3195,7 +3197,7 @@ auto monster::use_special_attack( const std::string &attack_id ) -> bool
     }
     // The actor may have killed this monster outright (mattack::suicide, mattack::kamikaze).
     // Leave the corpse's cooldowns alone; it will not act again.
-    if( !is_dead_state() && has_special_attack( used_id ) ) {
+    if( !is_dead() && has_special_attack( used_id ) ) {
         reset_special( used_id );
     }
     // Consume this action's special budget so the stock scheduler does not add a second
