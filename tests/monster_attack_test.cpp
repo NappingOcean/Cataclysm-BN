@@ -274,6 +274,20 @@ TEST_CASE(
         mon.execute_action(mon.decide_action());
         CHECK(mon.get_special_attack_cooldown("beta") == 9);
     }
+    SECTION("a stale budget clears itself instead of latching") {
+        REQUIRE(mon.use_special_attack("alpha"));
+        REQUIRE(mon.special_attack_budget_spent());
+        // Monsters without lua_ai never go through monster::move(), so nothing would clear
+        // this flag for them. Left latched it would bar the scheduler for the whole session.
+        mon.execute_action(mon.decide_action());
+        CHECK_FALSE(mon.special_attack_budget_spent());
+        // This action still honoured the budget, so beta did not fire.
+        CHECK(mon.get_special_attack_cooldown("beta") == 0);
+        // The next one is unaffected: alpha is on cooldown, so beta is the only candidate.
+        mon.moves = 100;
+        mon.execute_action(mon.decide_action());
+        CHECK(mon.get_special_attack_cooldown("beta") == 9);
+    }
     SECTION("the budget is cleared for the next action") {
         REQUIRE(mon.use_special_attack("alpha"));
         REQUIRE(mon.special_attack_budget_spent());

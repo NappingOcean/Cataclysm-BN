@@ -822,8 +822,9 @@ class monster : public Creature, public location_visitable<monster>
 
         int hp;
         std::map<std::string, mon_special_attack> special_attacks;
-        /// Per-action special attack budget, consumed by use_special_attack() and read by
-        /// the stock scheduler. Transient: reset by monster::move(), never serialized.
+        /// Per-action special attack budget, set by use_special_attack(). The stock scheduler
+        /// consumes it on read, and monster::move() clears it at the top of every action.
+        /// Transient, never serialized.
         bool special_attack_spent = false;
         /// Reentrancy guard for use_special_attack(). Transient, never serialized.
         bool dispatching_special_attack = false;
