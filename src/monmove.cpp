@@ -1545,6 +1545,10 @@ void monster::execute_action( const monster_action_t &action )
             }
         }
         auto sp_atk_used = false;
+        // The same guard use_special_attack() holds, so an on-hit or attitude callback that
+        // reaches back into Lua cannot fire a second attack from inside this one.
+        dispatching_special_attack = true;
+        const auto restore = on_out_of_scope( [this]() { dispatching_special_attack = false; } );
         while( !sp_atk_used && !spec_list.empty() ) {
             const auto spec_iter = spec_list.size() == 1 ? 0 :
                                    rng( 0, static_cast<int>( spec_list.size() ) - 1 );

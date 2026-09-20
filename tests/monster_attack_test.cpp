@@ -18,6 +18,10 @@
 #include <vector>
 
 namespace {
+// Set by the actors in the scheduler reentrancy test; capture-less actors need file scope.
+bool nested_dispatch_allowed = false;
+bool scheduler_actor_ran = false;
+
 const auto effect_dazed = efftype_id("dazed");
 const auto effect_shrieking = efftype_id("shrieking");
 
@@ -276,6 +280,45 @@ TEST_CASE(
         mon.move();
         CHECK_FALSE(mon.special_attack_budget_spent());
     }
+}
+
+TEST_CASE("the stock scheduler holds the same reentrancy guard", "[monster][special_attack]") {
+    clear_all_state();
+    // Declared before the cleanup so it outlives the monster that borrows it.
+    auto test_type = mtype_id("mon_test_special_attack_pair").obj();
+    const auto cleanup = on_out_of_scope([]() { clear_all_state(); });
+    auto& target = get_avatar();
+    target.setpos(map_local_to_abs(get_map(), tripoint_bub_ms(61, 60, 0)));
+    auto& mon = spawn_test_monster("mon_test_special_attack_pair", tripoint_bub_ms(60, 60, 0));
+    mon.friendly = 0;
+    mon.anger = 100;
+    mon.moves = 100;
+    mon.set_dest(target.bub_pos());
+
+    test_type.special_attacks.clear();
+    // Stands in for an on-hit callback reaching back into Lua while a stock attack runs.
+    test_type.special_attacks.emplace(
+        "alpha", mtype_special_attack("alpha", [](monster* z) -> bool {
+            scheduler_actor_ran = true;
+            nested_dispatch_allowed = z->use_special_attack("beta");
+            return true;
+        }));
+    // Declining keeps the scheduler's random pick from ending the loop before alpha runs:
+    // a refused actor is dropped and the loop moves on, so alpha runs in either order.
+    test_type.special_attacks.emplace(
+        "beta", mtype_special_attack("beta", [](monster*) -> bool { return false; }));
+    mon.type = &test_type;
+    mon.set_special("alpha", 0);
+    mon.set_special("beta", 0);
+    scheduler_actor_ran = false;
+    nested_dispatch_allowed = true;
+
+    // The guard reports the refused nesting; capture it so it does not fail the run.
+    capture_debugmsg_during([&]() { mon.execute_action(mon.decide_action()); });
+    REQUIRE(scheduler_actor_ran);
+    CHECK_FALSE(nested_dispatch_allowed);
+    // The nested call never reached beta's actor, so its cooldown is untouched.
+    CHECK(mon.get_special_attack_cooldown("beta") == 0);
 }
 
 TEST_CASE("hearing protection blocks screecher daze", "[monster][sound]") {
