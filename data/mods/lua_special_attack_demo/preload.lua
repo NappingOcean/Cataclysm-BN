@@ -1,16 +1,16 @@
-local demo = {}
-
 local attack_id = "demo_tap"
 
 ---@param mon Monster
 ---@param target Creature|nil
+---@return MonsterAttitude
 local function demo_attitude(mon, target)
-  -- Hostile intent lets the existing melee actor select the avatar as its target.
-  -- The demonstration attack has zero damage and the AI never uses normal melee.
-  return MonsterAttitude.MATT_ATTACK
+  local _ = mon
+  if target ~= nil and target:is_avatar() then return MonsterAttitude.MATT_ATTACK end
+  return MonsterAttitude.MATT_IGNORE
 end
 
 ---@param mon Monster
+---@return boolean
 local function demo_turn(mon)
   local avatar = gapi.get_avatar()
   local before_moves = mon:get_moves()
@@ -34,25 +34,22 @@ local function demo_turn(mon)
     result = result .. "; actor move cost: " .. tostring(before_moves - mon:get_moves()) .. "."
   end
 
-  if avatar ~= nil then
-    local pos = mon:get_pos_ms()
-    local target_pos = avatar:get_pos_ms()
-    if pos.z == target_pos.z and math.max(math.abs(pos.x - target_pos.x), math.abs(pos.y - target_pos.y)) <= 10 then
-      gapi.add_msg(MsgType.info, string.format("[Special demo AI #%d] %s", step, result))
-    end
+  local pos = mon:get_pos_ms()
+  local target_pos = avatar:get_pos_ms()
+  if pos.z == target_pos.z and math.max(math.abs(pos.x - target_pos.x), math.abs(pos.y - target_pos.y)) <= 10 then
+    gapi.add_msg(MsgType.info, string.format("[Special demo AI #%d] %s", step, result))
   end
 
   -- Spend at least one standard action even when the actor fails or is waiting.
-  -- Keep the actor's own cost, topping it up only if it spent fewer than 100 moves.
+  -- Preserve the actor's own cost, adding only the unspent portion.
   local spent = before_moves - mon:get_moves()
   if spent < 100 then mon:mod_moves(-(100 - spent)) end
-  -- Handle the entire action so the normal special-attack scheduler never runs here.
+
+  -- This AI handled the action, so stock AI and its special scheduler do not run.
   return true
 end
 
-function demo.register()
-  game.monster_attitude_functions["lua_special_attack_demo_attitude"] = demo_attitude
-  game.monster_ai_functions["lua_special_attack_demo"] = demo_turn
-end
+game.monster_attitude_functions["lua_special_attack_demo_attitude"] = demo_attitude
+game.monster_ai_functions["lua_special_attack_demo"] = demo_turn
 
-return demo
+gdebug.log_info("lua_special_attack_demo: ready.")
