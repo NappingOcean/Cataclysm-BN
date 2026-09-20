@@ -507,6 +507,14 @@ class monster : public Creature, public location_visitable<monster>
                      dealt_projectile_attack const *proj = nullptr ) override;
         void on_damage_of_type( int amt, damage_type dt, const bodypart_id &bp ) override;
 
+        /// Whether the current type and this instance both contain the attack.
+        auto has_special_attack( const std::string &attack_id ) const -> bool;
+        /// Checks only enabled state and zero cooldown, not targeting or actor prerequisites.
+        auto special_attack_ready( const std::string &attack_id ) const -> bool;
+        /// Calls a ready actor once and resets its cooldown only if it reports use.
+        /// Does not apply the AI scheduler's pacified/hallucination restrictions.
+        auto use_special_attack( const std::string &attack_id ) -> bool;
+
         /** Resets a given special to its monster type cooldown value */
         void reset_special( const std::string &special_name );
         /** Resets a given special to a value between 0 and its monster type cooldown value. */

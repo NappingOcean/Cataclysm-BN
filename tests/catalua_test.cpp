@@ -59,6 +59,48 @@
 // workaround for https://github.com/llvm/llvm-project/issues/113087
 #define CHECK_TUPLE(...) CHECK((__VA_ARGS__))
 
+TEST_CASE(
+    "Lua monster special attacks use the real melee actor", "[lua][monster][special_attack]") {
+    clear_all_state();
+    const auto cleanup = on_out_of_scope([]() { clear_all_state(); });
+    auto& target = get_avatar();
+    target.setpos(map_local_to_abs(get_map(), tripoint_bub_ms(65, 60, 0)));
+    auto& mon = spawn_test_monster("mon_test_special_attack", tripoint_bub_ms(60, 60, 0));
+    mon.set_special("test", 0);
+    mon.friendly = 0;
+    mon.anger = 100;
+    mon.moves = 100;
+    mon.set_dest(target.bub_pos());
+    REQUIRE(mon.attack_target() == &target);
+    auto lua = make_lua_state();
+    lua["test_monster"] = &mon;
+    const auto failed = lua.safe_script(
+        R"(
+        assert(test_monster:has_special_attack("test"))
+        assert(not test_monster:has_special_attack("missing"))
+        assert(not test_monster:use_special_attack("missing"))
+        assert(test_monster:special_attack_ready("test"))
+        assert(not test_monster:use_special_attack("test"))
+        assert(test_monster:special_attack_ready("test"))
+    )",
+        sol::script_pass_on_error);
+    CHECK(failed.valid());
+    CHECK(mon.moves == 100);
+    CHECK(mon.shortest_special_cooldown() == 0);
+    target.setpos(map_local_to_abs(get_map(), tripoint_bub_ms(61, 60, 0)));
+    mon.set_dest(target.bub_pos());
+    const auto used = lua.safe_script(
+        R"(
+        assert(test_monster:use_special_attack("test"))
+        assert(not test_monster:special_attack_ready("test"))
+        assert(not test_monster:use_special_attack("test"))
+    )",
+        sol::script_pass_on_error);
+    CHECK(used.valid());
+    CHECK(mon.moves == 77);
+    CHECK(mon.shortest_special_cooldown() == 7);
+}
+
 static void run_lua_test_script(sol::state& lua, const std::string& script_name) {
     std::string full_script_name = "tests/lua/" + script_name;
 

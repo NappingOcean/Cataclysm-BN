@@ -37,6 +37,91 @@ auto setup_shriek_stun_test() -> shriek_stun_setup {
 
 } // namespace
 
+TEST_CASE(
+    "special attack dispatch preserves actor and cooldown contracts", "[monster][special_attack]") {
+    auto test_type = mtype_id("mon_test_special_attack").obj();
+    test_type.special_attacks.clear();
+    auto attack = mtype_special_attack("test", [](monster* mon) -> bool {
+        mon->mod_moves(-17);
+        return mon->anger > 0;
+    });
+    test_type.special_attacks.emplace("test", attack);
+    auto mon = monster(mtype_id("mon_test_special_attack"));
+    mon.type = &test_type;
+    mon.set_special("test", 0);
+    mon.moves = 100;
+    mon.anger = 1;
+
+    SECTION("missing definition or state never dispatches") {
+        CHECK_FALSE(mon.has_special_attack("missing"));
+        CHECK_FALSE(mon.use_special_attack("missing"));
+        test_type.special_attacks.erase("test");
+        CHECK_FALSE(mon.has_special_attack("test"));
+        CHECK_FALSE(mon.special_attack_ready("test"));
+        CHECK_FALSE(mon.use_special_attack("test"));
+        CHECK(mon.moves == 100);
+    }
+    SECTION("definition without runtime state never dispatches") {
+        mon.poly(mtype_id("debug_mon"));
+        mon.type = &test_type;
+        mon.moves = 100;
+        CHECK_FALSE(mon.has_special_attack("test"));
+        CHECK_FALSE(mon.special_attack_ready("test"));
+        CHECK_FALSE(mon.use_special_attack("test"));
+        CHECK(mon.moves == 100);
+    }
+    SECTION("only enabled zero cooldown attacks dispatch") {
+        const auto cooldown = GENERATE(-1, 0, 1);
+        const auto enabled = GENERATE(false, true);
+        mon.set_special("test", cooldown);
+        if (!enabled) { mon.disable_special("test"); }
+        CHECK(mon.has_special_attack("test"));
+        CHECK(mon.special_attack_ready("test") == (enabled && cooldown == 0));
+        CHECK(mon.use_special_attack("test") == (enabled && cooldown == 0));
+        CHECK(mon.moves == (enabled && cooldown == 0 ? 83 : 100));
+        if (enabled) { CHECK(mon.shortest_special_cooldown() == cooldown); }
+    }
+    SECTION("actor false does not roll back effects or consume cooldown") {
+        mon.anger = 0;
+        CHECK_FALSE(mon.use_special_attack("test"));
+        CHECK(mon.moves == 83);
+        CHECK(mon.special_attack_ready("test"));
+    }
+    SECTION("zero default cooldown remains ready after use") {
+        CHECK(mon.use_special_attack("test"));
+        CHECK(mon.special_attack_ready("test"));
+    }
+    SECTION("successful actor can disable itself without being reenabled") {
+        test_type.special_attacks.at(
+            "test") = mtype_special_attack("test", [](monster* target) -> bool {
+            target->disable_special("test");
+            return true;
+        });
+        CHECK(mon.use_special_attack("test"));
+        CHECK(mon.has_special_attack("test"));
+        CHECK_FALSE(mon.special_attack_ready("test"));
+    }
+    SECTION("successful actor resets the new type's cooldown after transforming") {
+        test_type.special_attacks.at(
+            "test") = mtype_special_attack("test", [](monster* target) -> bool {
+            target->poly(mtype_id("mon_test_special_attack"));
+            target->set_special("test", 55);
+            return true;
+        });
+        CHECK(mon.use_special_attack("test"));
+        CHECK(mon.shortest_special_cooldown() == 7);
+    }
+    SECTION("actor can transform and remove the used attack") {
+        test_type.special_attacks.at(
+            "test") = mtype_special_attack("test", [](monster* target) -> bool {
+            target->poly(mtype_id("debug_mon"));
+            return true;
+        });
+        CHECK(mon.use_special_attack("test"));
+        CHECK_FALSE(mon.has_special_attack("test"));
+    }
+}
+
 TEST_CASE("hearing protection blocks screecher daze", "[monster][sound]") {
     const auto protected_item = GENERATE("ear_plugs", "army_powered_earmuffs_on");
     CAPTURE(protected_item);

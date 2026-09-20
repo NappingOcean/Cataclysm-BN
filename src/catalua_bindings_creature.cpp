@@ -444,6 +444,14 @@ void cata::detail::reg_monster( sol::state &lua )
         SET_FX_T( try_upgrade, void( bool ) );
         SET_FX_T( try_reproduce, void() );
         SET_FX_T( refill_udders, void() );
+        DOC( "Whether this monster's current type and runtime state contain the exact attack ID." );
+        SET_FX_T( has_special_attack, bool( const std::string & ) const );
+        DOC( "Checks only enabled state and zero cooldown; does not predict range, target, sight or ammo." );
+        SET_FX_T( special_attack_ready, bool( const std::string & ) const );
+        DOC( "Calls a ready special attack once. True means the actor handled use, not necessarily a hit or shot." );
+        DOC( "Resets cooldown only on true. Actor side effects are not rolled back on false." );
+        DOC( "Does not apply the scheduler's pacified/hallucination restrictions or plan a target." );
+        SET_FX_T( use_special_attack, bool( const std::string & ) );
         SET_FX_T( spawn, void( const tripoint_bub_ms & ) );
 
         SET_FX_T( name, std::string( unsigned int ) const );

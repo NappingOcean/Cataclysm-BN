@@ -3123,6 +3123,34 @@ void monster::reset_stats()
     // Nothing here yet
 }
 
+auto monster::has_special_attack( const std::string &attack_id ) const -> bool
+{
+    return type->special_attacks.contains( attack_id ) && special_attacks.contains( attack_id );
+}
+
+auto monster::special_attack_ready( const std::string &attack_id ) const -> bool
+{
+    const auto attack = special_attacks.find( attack_id );
+    return type->special_attacks.contains( attack_id ) && attack != special_attacks.end() &&
+           attack->second.enabled && attack->second.cooldown == 0;
+}
+
+auto monster::use_special_attack( const std::string &attack_id ) -> bool
+{
+    if( !special_attack_ready( attack_id ) ) {
+        return false;
+    }
+    // The actor may replace the runtime state through poly(), including the supplied ID.
+    const auto used_id = attack_id;
+    if( !type->special_attacks.at( used_id )->call( *this ) ) {
+        return false;
+    }
+    if( has_special_attack( used_id ) ) {
+        reset_special( used_id );
+    }
+    return true;
+}
+
 void monster::reset_special( const std::string &special_name )
 {
     const auto iter = type->special_attacks.find( special_name );
