@@ -123,7 +123,7 @@ TEST_CASE(
         CHECK(mon.special_attack_ready("test"));
         CHECK_FALSE(mon.use_special_attack("test"));
         CHECK(mon.moves == 100);
-        CHECK_FALSE(mon.special_attack_spent_this_action());
+        CHECK_FALSE(mon.special_attack_budget_spent());
     }
     SECTION("an actor that kills its monster leaves the corpse's cooldown alone") {
         test_type.special_attacks.at(
@@ -147,7 +147,9 @@ TEST_CASE(
         CHECK_THAT(dmsg, Catch::Contains("re-entered use_special_attack"));
         // Hardcoded actors carry no cooldown of their own, so the reset leaves it ready.
         CHECK(mon.get_special_attack_cooldown("test") == 0);
-        // The guard is released once the outer call returns, so the next one still works.
+        // The reentrancy guard is released once the outer call returns. What blocks the next
+        // one now is the action's budget, so free it to prove the guard itself is not held.
+        mon.clear_special_attack_budget();
         CHECK(mon.use_special_attack("test"));
     }
     SECTION("actor can transform and remove the used attack") {
@@ -177,7 +179,7 @@ TEST_CASE("a monster killed outright still refuses to dispatch", "[monster][spec
 
     CHECK_FALSE(mon.use_special_attack("alpha"));
     CHECK(mon.get_special_attack_cooldown("alpha") == 0);
-    CHECK_FALSE(mon.special_attack_spent_this_action());
+    CHECK_FALSE(mon.special_attack_budget_spent());
 }
 
 TEST_CASE("special attack enable state is queryable and reversible", "[monster][special_attack]") {
@@ -227,11 +229,11 @@ TEST_CASE(
     mon.set_special("alpha", 0);
     mon.set_special("beta", 0);
     REQUIRE(mon.attack_target() == &target);
-    REQUIRE_FALSE(mon.special_attack_spent_this_action());
+    REQUIRE_FALSE(mon.special_attack_budget_spent());
 
     SECTION("Lua's pick is the only special that fires this action") {
         REQUIRE(mon.use_special_attack("alpha"));
-        CHECK(mon.special_attack_spent_this_action());
+        CHECK(mon.special_attack_budget_spent());
         // Stock turn on top of the Lua pick: beta must stay untouched.
         mon.execute_action(mon.decide_action());
         CHECK(mon.get_special_attack_cooldown("alpha") == 7);
@@ -243,18 +245,36 @@ TEST_CASE(
         const auto beta_fired = mon.get_special_attack_cooldown("beta") == 9;
         CHECK(alpha_fired != beta_fired);
     }
+    SECTION("a second attack in the same action is refused") {
+        REQUIRE(mon.use_special_attack("alpha"));
+        REQUIRE(mon.special_attack_budget_spent());
+        const auto moves_before = mon.moves;
+        const auto dmsg =
+            capture_debugmsg_during([&]() { CHECK_FALSE(mon.use_special_attack("beta")); });
+        CHECK_THAT(dmsg, Catch::Contains("already spent this action's special attack"));
+        // The refusal costs nothing: beta never ran.
+        CHECK(mon.get_special_attack_cooldown("beta") == 0);
+        CHECK(mon.moves == moves_before);
+    }
+    SECTION("clearing the budget by name allows a deliberate second attack") {
+        REQUIRE(mon.use_special_attack("alpha"));
+        mon.clear_special_attack_budget();
+        CHECK(mon.use_special_attack("beta"));
+        CHECK(mon.get_special_attack_cooldown("beta") == 9);
+        CHECK(mon.special_attack_budget_spent());
+    }
     SECTION("a failed Lua attempt leaves the budget for the stock scheduler") {
         mon.set_special_attack_enabled("alpha", false);
         CHECK_FALSE(mon.use_special_attack("alpha"));
-        CHECK_FALSE(mon.special_attack_spent_this_action());
+        CHECK_FALSE(mon.special_attack_budget_spent());
         mon.execute_action(mon.decide_action());
         CHECK(mon.get_special_attack_cooldown("beta") == 9);
     }
     SECTION("the budget is cleared for the next action") {
         REQUIRE(mon.use_special_attack("alpha"));
-        REQUIRE(mon.special_attack_spent_this_action());
+        REQUIRE(mon.special_attack_budget_spent());
         mon.move();
-        CHECK_FALSE(mon.special_attack_spent_this_action());
+        CHECK_FALSE(mon.special_attack_budget_spent());
     }
 }
 

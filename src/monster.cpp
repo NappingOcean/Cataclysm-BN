@@ -235,6 +235,18 @@ auto report_recursive_special_attack( const std::string &mon_name,
               "the nested call was refused.", mon_name, attack_id );
 }
 
+auto report_spent_special_attack( const std::string &mon_name,
+                                  const std::string &attack_id ) -> void
+{
+    static auto warned = std::unordered_set<std::string> {};
+    if( !warned.insert( attack_id ).second ) {
+        return;
+    }
+    debugmsg( "%s already spent this action's special attack, so use_special_attack( '%s' ) "
+              "was refused. Call clear_special_attack_budget() first if the second attack "
+              "is deliberate.", mon_name, attack_id );
+}
+
 auto report_recursive_lua_attitude( const std::string &method ) -> void
 {
     static auto warned = std::unordered_set<std::string> {};
@@ -3179,6 +3191,13 @@ auto monster::use_special_attack( const std::string &attack_id ) -> bool
     // stock scheduler is gated by the caller's is_dead() check, which one Lua AI call does
     // not repeat, so an actor that kills this monster must not be followed by another.
     if( is_dead() || !special_attack_ready( attack_id ) ) {
+        return false;
+    }
+    // One special attack per action, whoever spends it. Lua chooses which attack; the engine
+    // keeps the action economy, because an accidental second attack is silent in play while a
+    // refused deliberate one shows up immediately in testing.
+    if( special_attack_spent ) {
+        report_spent_special_attack( disp_name(), attack_id );
         return false;
     }
     // An actor can re-enter Lua (an attitude function, an on-hit hook) which can call back

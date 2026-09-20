@@ -526,10 +526,11 @@ class monster : public Creature, public location_visitable<monster>
         auto set_special_attack_cooldown( const std::string &attack_id, int turns ) -> void;
         /// Remaining cooldown, or nullopt for attacks this monster does not have.
         auto get_special_attack_cooldown( const std::string &attack_id ) const -> std::optional<int>;
-        /// Whether a special attack already fired during the current action.
-        auto special_attack_spent_this_action() const -> bool { return special_attack_spent; }
-        /// Clears the per-action special budget. Called at the start of monster::move().
-        auto clear_special_attack_spent() -> void { special_attack_spent = false; }
+        /// Whether this action's one special attack has already been spent.
+        auto special_attack_budget_spent() const -> bool { return special_attack_spent; }
+        /// Frees the budget for a deliberate second attack in the same action.
+        /// Called at the start of monster::move(); Lua must ask for it by name.
+        auto clear_special_attack_budget() -> void { special_attack_spent = false; }
 
         /** Resets a given special to its monster type cooldown value */
         void reset_special( const std::string &special_name );

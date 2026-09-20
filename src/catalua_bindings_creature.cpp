@@ -453,6 +453,12 @@ void cata::detail::reg_monster( sol::state &lua )
         DOC( "Does not apply the scheduler's pacified/hallucination restrictions or plan a target." );
         DOC( "On true the stock scheduler skips its own pick for the rest of this action." );
         SET_FX_T( use_special_attack, bool( const std::string & ) );
+        DOC( "Whether this action's one special attack has already been spent." );
+        SET_FX_N_T( special_attack_budget_spent, "special_attack_budget_spent", bool() const );
+        DOC( "Frees the budget so a further use_special_attack can run in the same action." );
+        DOC( "Only for a deliberately multi-attack action; the budget is what stops Lua and" );
+        DOC( "the stock scheduler from stacking attacks onto one action." );
+        SET_FX_N_T( clear_special_attack_budget, "clear_special_attack_budget", void() );
         DOC( "Sorted IDs of every special attack this monster's current type defines." );
         SET_FX_N_T( special_attack_ids, "get_special_attack_ids",
                     std::vector<std::string>() const );

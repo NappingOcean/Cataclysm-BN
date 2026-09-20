@@ -1532,7 +1532,7 @@ void monster::execute_action( const monster_action_t &action )
     //     out into a separate action kind (with an early return) caused an infinite
     //     loop: if all call()s failed the cooldown was never reset, decide_action()
     //     saw cooldown==0 again next iteration, and moves were never consumed.
-    if( !pacified && !is_hallucination() && !special_attack_spent_this_action() &&
+    if( !pacified && !is_hallucination() && !special_attack_budget_spent() &&
         !type->special_attacks.empty() && !special_attacks.empty() ) {
         ZoneScopedN( "mon_execute_special_attacks" );
         auto spec_list = std::vector<const std::pair<const std::string, mtype_special_attack> *> {};
@@ -1854,7 +1854,7 @@ void monster::execute_action( const monster_action_t &action )
 void monster::move()
 {
     // Each action gets one special attack, whether Lua or the stock scheduler spends it.
-    clear_special_attack_spent();
+    clear_special_attack_budget();
     const auto pre_lua_pos = bub_pos();
     const auto pre_lua_moves = moves;
     if( run_lua_monster_ai( *this ) ) {
