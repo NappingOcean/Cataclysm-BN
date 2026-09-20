@@ -5,6 +5,38 @@
 - Use `lua_ai_debug_selector` to apply the chosen mode to nearby debug drones without spawning new ones.
 - Example `Lua dance bot` (`mon_lua_dancer`) shows a bespoke `lua_ai_dance` + `lua_attitude_dance`; spawn it from the debug monster menu to watch it loop a square dance and “sing”.
 
+## Special attack demonstration
+
+Requires a game binary with `Monster:has_special_attack`, `special_attack_ready`, and
+`use_special_attack`. Enable **Lua AI Examples** in a test world; `test_data` is not needed.
+Restart the game after adding these files so the new monster JSON is loaded.
+
+1. Use the debug monster menu to spawn **Lua special attack demonstrator**
+   (`mon_lua_special_attack_demo`) on an empty tile 4–5 tiles away, in clear sight.
+   Spawn only one to keep the messages easy to follow.
+2. Advance time one action at a time. If safe mode blocks waiting near this hostile-intent
+   training robot, turn safe mode off for the demonstration. It stays in place.
+3. The initial cooldown is randomized by normal monster creation. After it expires,
+   messages should repeatedly show `FAILED`, `Ready afterward: true`, and actor move cost `0`.
+   Readiness does not guarantee that the melee actor has an adjacent target.
+4. Walk next to the robot and wait. It should report `USED`, `Ready afterward: false`, and
+   actor move cost `100`. The existing melee actor performs a zero-damage tap; dodging still
+   counts as use. Use a plain test character without retaliation abilities.
+5. Stay adjacent. Expect `WAIT` messages until the normal cooldown expires, then another
+   `USED`. Move away again to see failures resume once the attack is ready.
+
+`AI #` counts Lua AI calls, not seconds or player turns. Player speed and action duration can
+change how many messages appear per player action. The attack's configured cooldown is 7;
+the script neither reads its remaining value nor changes it. Logs are limited to the same
+z-level and a distance of 10 tiles.
+
+The script checks ownership and readiness, then calls the actor at most once per AI action.
+It delegates target/range checks and attack cost to the actor. It spends at least 100 moves
+per action and returns `true`, preventing idle retry loops and normal AI fallback.
+The other drones and the remote's existing modes are unchanged.
+
+Implementation: `special_attack_demo.lua` and `special_attack_demo.json`.
+
 ## Concepts
 
 - `lua_attitude` answers "how does this monster feel about this target right now?" It returns a `MonsterAttitude` such as `MATT_ATTACK`, `MATT_FOLLOW`, `MATT_FRIEND`, or `MATT_IGNORE`.

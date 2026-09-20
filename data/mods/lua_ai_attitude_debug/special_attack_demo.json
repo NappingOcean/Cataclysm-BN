@@ -1,0 +1,29 @@
+[
+  {
+    "type": "MONSTER",
+    "id": "mon_lua_special_attack_demo",
+    "copy-from": "mon_lua_ai_debug",
+    "name": { "str": "Lua special attack demonstrator" },
+    "description": "A stationary training robot. Its Lua AI reports special attack readiness, failed attempts and cooldown after a harmless tap. Stand several tiles away, then approach it to compare the results.",
+    "symbol": "S",
+    "color": "light_cyan",
+    "hp": 1000,
+    "speed": 100,
+    "aggression": 100,
+    "melee_dice": 0,
+    "melee_dice_sides": 0,
+    "lua_ai": "lua_special_attack_demo",
+    "lua_attitude": "lua_special_attack_demo_attitude",
+    "special_attacks": [
+      {
+        "type": "melee",
+        "id": "demo_tap",
+        "cooldown": 7,
+        "move_cost": 100,
+        "damage_max_instance": [ { "damage_type": "bash", "amount": 0 } ],
+        "miss_msg_u": "The %s demonstrates a tap, but you dodge it.",
+        "no_dmg_msg_u": "The %s demonstrates a harmless tap."
+      }
+    ]
+  }
+]
