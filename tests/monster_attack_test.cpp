@@ -1,6 +1,7 @@
 #include "../src/map/map.h"
 #include "avatar.h"
 #include "calendar.h"
+#include "cata_utility.h"
 #include "catch/catch.hpp"
 #include "coordinates.h"
 #include "game.h"
@@ -10,6 +11,10 @@
 #include "monster.h"
 #include "state_helpers.h"
 #include "type_id.h"
+
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace {
 const auto effect_dazed = efftype_id("dazed");
@@ -119,6 +124,39 @@ TEST_CASE(
         });
         CHECK(mon.use_special_attack("test"));
         CHECK_FALSE(mon.has_special_attack("test"));
+    }
+}
+
+TEST_CASE("special attack enable state is queryable and reversible", "[monster][special_attack]") {
+    clear_all_state();
+    const auto cleanup = on_out_of_scope([]() { clear_all_state(); });
+    // clear_all_state() parks the avatar on (60, 60, 0), which would block the spawn.
+    get_avatar().setpos(map_local_to_abs(get_map(), tripoint_bub_ms(65, 60, 0)));
+    auto& mon = spawn_test_monster("mon_test_special_attack_pair", tripoint_bub_ms(60, 60, 0));
+
+    SECTION("ids enumerate the current type's attacks, sorted") {
+        CHECK(mon.special_attack_ids() == std::vector<std::string>{"alpha", "beta"});
+    }
+    SECTION("attacks start enabled and toggle both ways") {
+        CHECK(mon.special_attack_enabled("alpha"));
+        mon.set_special_attack_enabled("alpha", false);
+        CHECK_FALSE(mon.special_attack_enabled("alpha"));
+        CHECK_FALSE(mon.special_attack_ready("alpha"));
+        // The attack is still present, just dormant.
+        CHECK(mon.has_special_attack("alpha"));
+        mon.set_special_attack_enabled("alpha", true);
+        CHECK(mon.special_attack_enabled("alpha"));
+    }
+    SECTION("toggling does not touch the cooldown") {
+        mon.set_special("alpha", 4);
+        mon.set_special_attack_enabled("alpha", false);
+        CHECK(mon.get_special_attack_cooldown("alpha") == 4);
+        mon.set_special_attack_enabled("alpha", true);
+        CHECK(mon.get_special_attack_cooldown("alpha") == 4);
+    }
+    SECTION("unknown attacks report absent rather than enabled") {
+        CHECK_FALSE(mon.special_attack_enabled("missing"));
+        CHECK(mon.get_special_attack_cooldown("missing") == std::nullopt);
     }
 }
 

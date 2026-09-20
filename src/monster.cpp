@@ -3151,6 +3151,54 @@ auto monster::use_special_attack( const std::string &attack_id ) -> bool
     return true;
 }
 
+auto monster::special_attack_ids() const -> std::vector<std::string>
+{
+    namespace ranges = std::ranges;
+    using namespace std::views;
+
+    // Hoisted out of the pipeline: an inline lambda there breaks astyle's continuation
+    // indent. See mongroup.cpp for the same pipeline shape without one.
+    const auto tracked = [this]( const auto & id ) { return special_attacks.contains( id ); };
+    // type->special_attacks is a std::map, so the result is already sorted by ID.
+    return type->special_attacks
+           | keys
+           | filter( tracked )
+           | ranges::to<std::vector<std::string>>();
+}
+
+auto monster::special_attack_enabled( const std::string &attack_id ) const -> bool
+{
+    const auto attack = special_attacks.find( attack_id );
+    return type->special_attacks.contains( attack_id ) && attack != special_attacks.end() &&
+           attack->second.enabled;
+}
+
+auto monster::set_special_attack_enabled( const std::string &attack_id, bool enabled ) -> void
+{
+    if( enabled ) {
+        enable_special( attack_id );
+    } else {
+        disable_special( attack_id );
+    }
+}
+
+auto monster::set_special_attack_cooldown( const std::string &attack_id, int turns ) -> void
+{
+    if( !has_special_attack( attack_id ) ) {
+        return;
+    }
+    set_special( attack_id, std::max( 0, turns ) );
+}
+
+auto monster::get_special_attack_cooldown( const std::string &attack_id ) const -> std::optional<int>
+{
+    const auto attack = special_attacks.find( attack_id );
+    if( !type->special_attacks.contains( attack_id ) || attack == special_attacks.end() ) {
+        return std::nullopt;
+    }
+    return attack->second.cooldown;
+}
+
 void monster::reset_special( const std::string &special_name )
 {
     const auto iter = type->special_attacks.find( special_name );
@@ -3182,6 +3230,16 @@ void monster::disable_special( const std::string &special_name )
     const auto iter = special_attacks.find( special_name );
     if( iter != special_attacks.end() ) {
         iter->second.enabled = false;
+    } else {
+        debugmsg( "%s has no special attack %s", disp_name(), special_name );
+    }
+}
+
+void monster::enable_special( const std::string &special_name )
+{
+    const auto iter = special_attacks.find( special_name );
+    if( iter != special_attacks.end() ) {
+        iter->second.enabled = true;
     } else {
         debugmsg( "%s has no special attack %s", disp_name(), special_name );
     }

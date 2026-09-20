@@ -452,6 +452,24 @@ void cata::detail::reg_monster( sol::state &lua )
         DOC( "Resets cooldown only on true. Actor side effects are not rolled back on false." );
         DOC( "Does not apply the scheduler's pacified/hallucination restrictions or plan a target." );
         SET_FX_T( use_special_attack, bool( const std::string & ) );
+        DOC( "Sorted IDs of every special attack this monster's current type defines." );
+        SET_FX_N_T( special_attack_ids, "get_special_attack_ids",
+                    std::vector<std::string>() const );
+        DOC( "Whether the attack is enabled. False for attacks this monster does not have." );
+        SET_FX_N_T( special_attack_enabled, "special_attack_enabled",
+                    bool( const std::string & ) const );
+        DOC( "Enables or disables an attack without touching its cooldown." );
+        DOC( "The enabled flag is serialized, so it persists across save/load." );
+        DOC( "A disabled attack is skipped by the stock scheduler and by special_attack_ready." );
+        SET_FX_N_T( set_special_attack_enabled, "set_special_attack_enabled",
+                    void( const std::string &, bool ) );
+        DOC( "Remaining cooldown in turns, or nil for attacks this monster does not have." );
+        SET_FX_N_T( get_special_attack_cooldown, "get_special_attack_cooldown",
+                    std::optional<int>( const std::string & ) const );
+        DOC( "Sets the remaining cooldown in turns. Negative values are clamped to 0." );
+        DOC( "Does nothing for attacks this monster does not have." );
+        SET_FX_N_T( set_special_attack_cooldown, "set_special_attack_cooldown",
+                    void( const std::string &, int ) );
         SET_FX_T( spawn, void( const tripoint_bub_ms & ) );
 
         SET_FX_T( name, std::string( unsigned int ) const );

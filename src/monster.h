@@ -514,6 +514,16 @@ class monster : public Creature, public location_visitable<monster>
         /// Calls a ready actor once and resets its cooldown only if it reports use.
         /// Does not apply the AI scheduler's pacified/hallucination restrictions.
         auto use_special_attack( const std::string &attack_id ) -> bool;
+        /// Every attack ID the current type defines and this instance tracks, sorted.
+        auto special_attack_ids() const -> std::vector<std::string>;
+        /// Whether the attack is enabled. False for attacks this monster does not have.
+        auto special_attack_enabled( const std::string &attack_id ) const -> bool;
+        /// Enables or disables an attack without touching its cooldown.
+        auto set_special_attack_enabled( const std::string &attack_id, bool enabled ) -> void;
+        /// Sets the remaining cooldown, clamped to 0. No-op for attacks it does not have.
+        auto set_special_attack_cooldown( const std::string &attack_id, int turns ) -> void;
+        /// Remaining cooldown, or nullopt for attacks this monster does not have.
+        auto get_special_attack_cooldown( const std::string &attack_id ) const -> std::optional<int>;
 
         /** Resets a given special to its monster type cooldown value */
         void reset_special( const std::string &special_name );
@@ -523,6 +533,8 @@ class monster : public Creature, public location_visitable<monster>
         void set_special( const std::string &special_name, int time );
         /** Sets the enabled flag for the given special to false */
         void disable_special( const std::string &special_name );
+        /** Sets the enabled flag for the given special to true */
+        void enable_special( const std::string &special_name );
         /** Return the lowest cooldown for an enabled special */
         int shortest_special_cooldown() const;
 

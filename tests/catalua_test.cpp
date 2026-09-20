@@ -101,6 +101,47 @@ TEST_CASE(
     CHECK(mon.shortest_special_cooldown() == 7);
 }
 
+TEST_CASE(
+    "Lua can enumerate special attacks and toggle them by ID", "[lua][monster][special_attack]") {
+    clear_all_state();
+    const auto cleanup = on_out_of_scope([]() { clear_all_state(); });
+    get_avatar().setpos(map_local_to_abs(get_map(), tripoint_bub_ms(65, 60, 0)));
+    auto& mon = spawn_test_monster("mon_test_special_attack_pair", tripoint_bub_ms(60, 60, 0));
+    mon.set_special("alpha", 0);
+    mon.set_special("beta", 0);
+    auto lua = make_lua_state();
+    lua["test_monster"] = &mon;
+
+    // This mirrors what the phase boss demo does: enumerate, then keep exactly one enabled.
+    // It pins the whole round trip -- the returned list must be ipairs-able and its entries
+    // must compare equal to plain Lua strings, or the toggle silently hits the wrong attack.
+    const auto res = lua.safe_script(
+        R"(
+        local ids = test_monster:get_special_attack_ids()
+        assert(#ids == 2, "expected 2 ids, got " .. tostring(#ids))
+        assert(ids[1] == "alpha", "first id was " .. tostring(ids[1]))
+        assert(ids[2] == "beta", "second id was " .. tostring(ids[2]))
+        local seen = 0
+        for _, id in ipairs(ids) do
+            seen = seen + 1
+            test_monster:set_special_attack_enabled(id, id == "alpha")
+        end
+        assert(seen == 2, "ipairs visited " .. tostring(seen) .. " entries")
+        assert(test_monster:special_attack_enabled("alpha"))
+        assert(not test_monster:special_attack_enabled("beta"))
+    )",
+        sol::script_pass_on_error);
+    // Surface the script's own assert() text, which names the step that broke.
+    if (!res.valid()) { FAIL(res.get<sol::error>().what()); }
+
+    // The same state must be visible from C++, not just inside Lua.
+    CHECK(mon.special_attack_enabled("alpha"));
+    CHECK_FALSE(mon.special_attack_enabled("beta"));
+    // A disabled attack keeps its cooldown frozen, so it stays skippable.
+    CHECK(mon.special_attack_ready("alpha"));
+    CHECK_FALSE(mon.special_attack_ready("beta"));
+}
+
 static void run_lua_test_script(sol::state& lua, const std::string& script_name) {
     std::string full_script_name = "tests/lua/" + script_name;
 
