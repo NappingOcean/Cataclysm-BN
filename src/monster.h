@@ -815,6 +815,10 @@ class monster : public Creature, public location_visitable<monster>
 
         int hp;
         std::map<std::string, mon_special_attack> special_attacks;
+        /// Reentrancy guard for use_special_attack(). Transient, never serialized.
+        bool dispatching_special_attack = false;
+        /// Reentrancy guard for the Lua attitude hook. Transient, never serialized.
+        mutable bool evaluating_lua_attitude = false;
         // Absolute map-square position for active and overmap-stored monsters.
         tripoint_abs_ms pos_abs;
         tripoint_bub_ms goal;

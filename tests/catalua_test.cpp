@@ -142,6 +142,56 @@ TEST_CASE(
     CHECK_FALSE(mon.special_attack_ready("beta"));
 }
 
+TEST_CASE(
+    "a Lua attitude function cannot recurse through a special attack",
+    "[lua][monster][special_attack]") {
+    clear_all_state();
+    const auto cleanup = on_out_of_scope([]() { clear_all_state(); });
+    auto& state = *DynamicDataLoader::get_instance().lua;
+    cata::init_global_state_tables(state, {});
+    sol::state& lua = state.lua;
+
+    auto test_data = lua.create_table();
+    lua.globals()["test_data"] = test_data;
+    // Registered before the monster spawns, so no attitude query finds the hook missing.
+    const auto script = lua.safe_script(
+        R"(
+        test_data.depth = 0
+        test_data.max_depth = 0
+        game.monster_attitude_functions["test_recursive_attitude"] = function(mon, target)
+            test_data.depth = test_data.depth + 1
+            if test_data.depth > test_data.max_depth then
+                test_data.max_depth = test_data.depth
+            end
+            -- The actor resolves its target through attitude_to(), which lands back here.
+            mon:use_special_attack("test")
+            test_data.depth = test_data.depth - 1
+            return MonsterAttitude.MATT_ATTACK
+        end
+    )",
+        sol::script_pass_on_error);
+    REQUIRE(script.valid());
+
+    auto& target = get_avatar();
+    target.setpos(map_local_to_abs(get_map(), tripoint_bub_ms(61, 60, 0)));
+    auto& mon = spawn_test_monster("mon_test_lua_attitude_recursion", tripoint_bub_ms(60, 60, 0));
+    mon.friendly = 0;
+    mon.anger = 100;
+    mon.morale = 100;
+    mon.moves = 100;
+    mon.set_special("test", 0);
+    mon.set_dest(target.bub_pos());
+
+    // Without the guard this never returns; it recurses until the stack overflows.
+    // The guard reports the refused recursion, so capture it rather than failing the run.
+    const auto dmsg = capture_debugmsg_during([&]() {
+        CHECK(mon.attitude(&target) == MATT_ATTACK);
+    });
+    CHECK_THAT(dmsg, Catch::Contains("triggered attitude evaluation again"));
+    // The nested attitude query is served by the stock rules, so the hook runs exactly once.
+    CHECK(test_data.get<int>("max_depth") == 1);
+}
+
 static void run_lua_test_script(sol::state& lua, const std::string& script_name) {
     std::string full_script_name = "tests/lua/" + script_name;
 

@@ -4,6 +4,7 @@
 #include "cata_utility.h"
 #include "catch/catch.hpp"
 #include "coordinates.h"
+#include "debug.h"
 #include "game.h"
 #include "item.h"
 #include "map_helpers.h"
@@ -115,6 +116,39 @@ TEST_CASE(
         });
         CHECK(mon.use_special_attack("test"));
         CHECK(mon.shortest_special_cooldown() == 7);
+    }
+    SECTION("a dead monster never dispatches") {
+        mon.set_hp(0);
+        REQUIRE(mon.is_dead_state());
+        CHECK(mon.special_attack_ready("test"));
+        CHECK_FALSE(mon.use_special_attack("test"));
+        CHECK(mon.moves == 100);
+        CHECK_FALSE(mon.special_attack_spent_this_action());
+    }
+    SECTION("an actor that kills its monster leaves the corpse's cooldown alone") {
+        test_type.special_attacks.at(
+            "test") = mtype_special_attack("test", [](monster* target) -> bool {
+            target->set_hp(0);
+            return true;
+        });
+        CHECK(mon.use_special_attack("test"));
+        CHECK(mon.get_special_attack_cooldown("test") == 0);
+        // The corpse must refuse any follow-up the script attempts.
+        CHECK_FALSE(mon.use_special_attack("test"));
+    }
+    SECTION("an actor cannot re-enter the attack it is running") {
+        test_type.special_attacks.at(
+            "test") = mtype_special_attack("test", [](monster* target) -> bool {
+            // Without the guard this recurses until the stack overflows: the cooldown is
+            // not reset until call() returns, so the attack still looks ready.
+            return !target->use_special_attack("test");
+        });
+        const auto dmsg = capture_debugmsg_during([&]() { CHECK(mon.use_special_attack("test")); });
+        CHECK_THAT(dmsg, Catch::Contains("re-entered use_special_attack"));
+        // Hardcoded actors carry no cooldown of their own, so the reset leaves it ready.
+        CHECK(mon.get_special_attack_cooldown("test") == 0);
+        // The guard is released once the outer call returns, so the next one still works.
+        CHECK(mon.use_special_attack("test"));
     }
     SECTION("actor can transform and remove the used attack") {
         test_type.special_attacks.at(

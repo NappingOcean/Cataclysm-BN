@@ -3,6 +3,7 @@
 #include "action_time_scale.h"
 #include "avatar.h"
 #include "bodypart.h"
+#include "cata_utility.h"
 #include "catalua.h"
 #include "catalua_hooks.h"
 #include "catalua_icallback_actor.h"
@@ -221,6 +222,28 @@ auto report_missing_lua_attitude( const std::string &method ) -> void
         return;
     }
     debugmsg( "Lua monster attitude function '%s' is not defined", method );
+}
+
+auto report_recursive_special_attack( const std::string &mon_name,
+                                      const std::string &attack_id ) -> void
+{
+    static auto warned = std::unordered_set<std::string> {};
+    if( !warned.insert( attack_id ).second ) {
+        return;
+    }
+    debugmsg( "%s re-entered use_special_attack( '%s' ) from inside a special attack; "
+              "the nested call was refused.", mon_name, attack_id );
+}
+
+auto report_recursive_lua_attitude( const std::string &method ) -> void
+{
+    static auto warned = std::unordered_set<std::string> {};
+    if( !warned.insert( method ).second ) {
+        return;
+    }
+    debugmsg( "Lua monster attitude function '%s' triggered attitude evaluation again; "
+              "the nested call fell back to the stock rules. This usually means it called "
+              "use_special_attack() or another action that resolves a target.", method );
 }
 
 auto report_invalid_lua_attitude_return( const std::string &method, const sol::object &value,
@@ -1852,8 +1875,21 @@ std::string io::enum_to_string<monster_attitude>( monster_attitude att )
 
 auto monster::attitude( const Character *u ) const -> monster_attitude
 {
-    if( const auto lua_attitude = get_lua_monster_attitude( *this, u ); lua_attitude ) {
-        return *lua_attitude;
+    // A Lua attitude function that causes attitude to be evaluated again — directly, or by
+    // calling use_special_attack(), whose actor resolves its target through attitude_to() —
+    // would recurse until the stack overflows. Serve the nested call from the stock rules.
+    // Gated on lua_attitude so ordinary monsters, which call this from the movement hot
+    // loop, pay the same single check they did before the guard existed.
+    if( type->lua_attitude ) {
+        if( evaluating_lua_attitude ) {
+            report_recursive_lua_attitude( *type->lua_attitude );
+        } else {
+            evaluating_lua_attitude = true;
+            const auto restore = on_out_of_scope( [this]() { evaluating_lua_attitude = false; } );
+            if( const auto lua_attitude = get_lua_monster_attitude( *this, u ); lua_attitude ) {
+                return *lua_attitude;
+            }
+        }
     }
 
     if( friendly != 0 ) {
@@ -3137,15 +3173,29 @@ auto monster::special_attack_ready( const std::string &attack_id ) const -> bool
 
 auto monster::use_special_attack( const std::string &attack_id ) -> bool
 {
-    if( !special_attack_ready( attack_id ) ) {
+    // Actors reach into the map and into their target; a corpse must not act. The stock
+    // scheduler is gated by the caller's is_dead() check, which a single Lua AI call does
+    // not repeat, so an actor that kills this monster must not be followed by another.
+    if( is_dead_state() || !special_attack_ready( attack_id ) ) {
         return false;
     }
+    // An actor can re-enter Lua (an attitude function, an on-hit hook) which can call back
+    // into here. The cooldown is not reset until call() returns, so a nested call for the
+    // same attack would still look ready and recurse until the stack overflows.
+    if( dispatching_special_attack ) {
+        report_recursive_special_attack( disp_name(), attack_id );
+        return false;
+    }
+    dispatching_special_attack = true;
+    const auto restore = on_out_of_scope( [this]() { dispatching_special_attack = false; } );
     // The actor may replace the runtime state through poly(), including the supplied ID.
     const auto used_id = attack_id;
     if( !type->special_attacks.at( used_id )->call( *this ) ) {
         return false;
     }
-    if( has_special_attack( used_id ) ) {
+    // The actor may have killed this monster outright (mattack::suicide, mattack::kamikaze).
+    // Leave the corpse's cooldowns alone; it will not act again.
+    if( !is_dead_state() && has_special_attack( used_id ) ) {
         reset_special( used_id );
     }
     return true;
