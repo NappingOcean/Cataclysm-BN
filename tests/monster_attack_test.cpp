@@ -194,6 +194,51 @@ TEST_CASE("special attack enable state is queryable and reversible", "[monster][
     }
 }
 
+TEST_CASE(
+    "a spent special attack budget suppresses the stock scheduler", "[monster][special_attack]") {
+    clear_all_state();
+    const auto cleanup = on_out_of_scope([]() { clear_all_state(); });
+    auto& target = get_avatar();
+    target.setpos(map_local_to_abs(get_map(), tripoint_bub_ms(61, 60, 0)));
+    auto& mon = spawn_test_monster("mon_test_special_attack_pair", tripoint_bub_ms(60, 60, 0));
+    mon.friendly = 0;
+    mon.anger = 100;
+    mon.moves = 100;
+    mon.set_dest(target.bub_pos());
+    mon.set_special("alpha", 0);
+    mon.set_special("beta", 0);
+    REQUIRE(mon.attack_target() == &target);
+    REQUIRE_FALSE(mon.special_attack_spent_this_action());
+
+    SECTION("Lua's pick is the only special that fires this action") {
+        REQUIRE(mon.use_special_attack("alpha"));
+        CHECK(mon.special_attack_spent_this_action());
+        // Stock turn on top of the Lua pick: beta must stay untouched.
+        mon.execute_action(mon.decide_action());
+        CHECK(mon.get_special_attack_cooldown("alpha") == 7);
+        CHECK(mon.get_special_attack_cooldown("beta") == 0);
+    }
+    SECTION("an untouched budget still lets the stock scheduler fire one") {
+        mon.execute_action(mon.decide_action());
+        const auto alpha_fired = mon.get_special_attack_cooldown("alpha") == 7;
+        const auto beta_fired = mon.get_special_attack_cooldown("beta") == 9;
+        CHECK(alpha_fired != beta_fired);
+    }
+    SECTION("a failed Lua attempt leaves the budget for the stock scheduler") {
+        mon.set_special_attack_enabled("alpha", false);
+        CHECK_FALSE(mon.use_special_attack("alpha"));
+        CHECK_FALSE(mon.special_attack_spent_this_action());
+        mon.execute_action(mon.decide_action());
+        CHECK(mon.get_special_attack_cooldown("beta") == 9);
+    }
+    SECTION("the budget is cleared for the next action") {
+        REQUIRE(mon.use_special_attack("alpha"));
+        REQUIRE(mon.special_attack_spent_this_action());
+        mon.move();
+        CHECK_FALSE(mon.special_attack_spent_this_action());
+    }
+}
+
 TEST_CASE("hearing protection blocks screecher daze", "[monster][sound]") {
     const auto protected_item = GENERATE("ear_plugs", "army_powered_earmuffs_on");
     CAPTURE(protected_item);

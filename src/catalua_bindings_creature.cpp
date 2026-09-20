@@ -451,6 +451,7 @@ void cata::detail::reg_monster( sol::state &lua )
         DOC( "Calls a ready special attack once. True means the actor handled use, not necessarily a hit or shot." );
         DOC( "Resets cooldown only on true. Actor side effects are not rolled back on false." );
         DOC( "Does not apply the scheduler's pacified/hallucination restrictions or plan a target." );
+        DOC( "On true the stock scheduler skips its own pick for the rest of this action." );
         SET_FX_T( use_special_attack, bool( const std::string & ) );
         DOC( "Sorted IDs of every special attack this monster's current type defines." );
         SET_FX_N_T( special_attack_ids, "get_special_attack_ids",

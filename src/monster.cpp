@@ -3198,6 +3198,9 @@ auto monster::use_special_attack( const std::string &attack_id ) -> bool
     if( !is_dead_state() && has_special_attack( used_id ) ) {
         reset_special( used_id );
     }
+    // Consume this action's special budget so the stock scheduler does not add a second
+    // attack on top of the one Lua picked. monster::move() clears it every action.
+    special_attack_spent = true;
     return true;
 }
 

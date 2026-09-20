@@ -513,6 +513,8 @@ class monster : public Creature, public location_visitable<monster>
         auto special_attack_ready( const std::string &attack_id ) const -> bool;
         /// Calls a ready actor once and resets its cooldown only if it reports use.
         /// Does not apply the AI scheduler's pacified/hallucination restrictions.
+        /// On success marks the special budget for this action as spent, so the stock
+        /// scheduler skips its own pick for the remainder of the same monster::move().
         auto use_special_attack( const std::string &attack_id ) -> bool;
         /// Every attack ID the current type defines and this instance tracks, sorted.
         auto special_attack_ids() const -> std::vector<std::string>;
@@ -524,6 +526,10 @@ class monster : public Creature, public location_visitable<monster>
         auto set_special_attack_cooldown( const std::string &attack_id, int turns ) -> void;
         /// Remaining cooldown, or nullopt for attacks this monster does not have.
         auto get_special_attack_cooldown( const std::string &attack_id ) const -> std::optional<int>;
+        /// Whether a special attack already fired during the current action.
+        auto special_attack_spent_this_action() const -> bool { return special_attack_spent; }
+        /// Clears the per-action special budget. Called at the start of monster::move().
+        auto clear_special_attack_spent() -> void { special_attack_spent = false; }
 
         /** Resets a given special to its monster type cooldown value */
         void reset_special( const std::string &special_name );
@@ -815,6 +821,9 @@ class monster : public Creature, public location_visitable<monster>
 
         int hp;
         std::map<std::string, mon_special_attack> special_attacks;
+        /// Per-action special attack budget, consumed by use_special_attack() and read by
+        /// the stock scheduler. Transient: reset by monster::move(), never serialized.
+        bool special_attack_spent = false;
         /// Reentrancy guard for use_special_attack(). Transient, never serialized.
         bool dispatching_special_attack = false;
         /// Reentrancy guard for the Lua attitude hook. Transient, never serialized.
