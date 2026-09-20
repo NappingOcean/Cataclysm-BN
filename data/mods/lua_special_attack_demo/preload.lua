@@ -53,3 +53,37 @@ game.monster_attitude_functions["lua_special_attack_demo_attitude"] = demo_attit
 game.monster_ai_functions["lua_special_attack_demo"] = demo_turn
 
 gdebug.log_info("lua_special_attack_demo: ready.")
+
+-- Phase boss pattern: declare every attack in JSON, keep only the phase's attack
+-- enabled, and let the stock scheduler pick from what is left. This AI returns
+-- false, so stock movement, traps, drowning and escape checks all still run.
+
+---@param mon Monster
+---@return string
+local function phase_for(mon)
+  local ratio = mon:get_hp() / math.max(1, mon:get_hp_max())
+  if ratio > 0.66 then return "phase_opening" end
+  if ratio > 0.33 then return "phase_midgame" end
+  return "phase_enrage"
+end
+
+---@param mon Monster
+---@return boolean
+local function boss_turn(mon)
+  local wanted = phase_for(mon)
+  if mon:get_value("boss_phase") ~= wanted then
+    mon:set_value("boss_phase", wanted)
+    gapi.add_msg(MsgType.warning, string.format("[Phase boss] entering %s.", wanted))
+  end
+
+  -- Enumerate instead of hard-coding: picks up attacks added by copy-from or other mods.
+  for _, id in ipairs(mon:get_special_attack_ids()) do
+    mon:set_special_attack_enabled(id, id == wanted)
+  end
+
+  -- Returning false hands the turn back to the stock AI, which now can only choose
+  -- among the enabled attacks. No use_special_attack call is needed for this pattern.
+  return false
+end
+
+game.monster_ai_functions["lua_boss_phase_demo"] = boss_turn
