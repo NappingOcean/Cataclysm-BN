@@ -146,10 +146,17 @@ TEST_CASE(
     "a Lua attitude function cannot recurse through a special attack",
     "[lua][monster][special_attack]") {
     clear_all_state();
-    const auto cleanup = on_out_of_scope([]() { clear_all_state(); });
-    auto& state = *DynamicDataLoader::get_instance().lua;
-    cata::init_global_state_tables(state, {});
-    sol::state& lua = state.lua;
+    sol::state& lua = DynamicDataLoader::get_instance().lua->lua;
+    // Register into the live tables rather than calling init_global_state_tables(), which
+    // replaces every callback table plus the mod runtime and storage. Wiping those would
+    // leave whatever ran before this test without its registrations.
+    sol::table attitudes = lua.globals()["game"]["monster_attitude_functions"];
+    REQUIRE(attitudes.valid());
+    const auto cleanup = on_out_of_scope([&]() {
+        attitudes["test_recursive_attitude"] = sol::lua_nil;
+        lua.globals()["test_data"] = sol::lua_nil;
+        clear_all_state();
+    });
 
     auto test_data = lua.create_table();
     lua.globals()["test_data"] = test_data;
