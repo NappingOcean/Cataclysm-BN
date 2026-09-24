@@ -6432,6 +6432,8 @@ void game::monmove( const monster_activity_ai_mode mode, activity_monmove_cache 
                 !critter->is_dead() &&
                 !activity_ai_paused->contains( critter ) &&
                 !critter->has_effect( effect_ai_controlled ) &&
+                // lua_ai monsters take the direct move path, so a worker plan would be discarded.
+                !critter->type->lua_ai.has_value() &&
                 !critter->has_effect( effect_ridden ) &&
                 critter->moves > 0 &&
                 critter->next_turn <= current_turn &&
