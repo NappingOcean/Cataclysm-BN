@@ -55,20 +55,20 @@ void display_editor();
  * @returns The absolute coordinates of the chosen point or
  * invalid_point if canceled with Escape (or similar key).
  */
-tripoint_abs_omt choose_point();
+auto choose_point() -> tripoint_abs_omt;
 
 /**
  * Same as above but start at z-level z instead of players
  * current z-level, x and y are taken from the players position.
  */
-tripoint_abs_omt choose_point(int z);
+auto choose_point(int z) -> tripoint_abs_omt;
 /**
  * Interactive point choosing; used as the map screen.
  * The map is initially centered on the @ref origin.
  * @returns The absolute coordinates of the chosen point or
  * invalid_point if canceled with Escape (or similar key).
  */
-tripoint_abs_omt choose_point(const tripoint_abs_omt& origin);
+auto choose_point(const tripoint_abs_omt& origin) -> tripoint_abs_omt;
 
 } // namespace omap
 
@@ -99,7 +99,7 @@ extern tiles_redraw_info redraw_info;
 
 auto fmt_omt_coords(const tripoint_abs_omt& coord) -> std::string;
 
-weather_type_id get_weather_at_point(const point_abs_omt& pos);
-std::tuple<char, nc_color, size_t> get_note_display_info(const std::string& note);
-std::optional<std::string> get_note_sprite_id(const std::string& note);
+auto get_weather_at_point(const point_abs_omt& pos) -> weather_type_id;
+auto get_note_display_info(const std::string& note) -> std::tuple<char, nc_color, size_t>;
+auto get_note_sprite_id(const std::string& note) -> std::optional<std::string>;
 } // namespace overmap_ui

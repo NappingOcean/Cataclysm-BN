@@ -81,7 +81,7 @@ public:
     uint32_t symbol = 0;
     nc_color color = c_black;
 
-    std::string get_symbol() const;
+    auto get_symbol() const -> std::string;
 
     // Used by generic_factory
     bool was_loaded = false;
@@ -96,7 +96,7 @@ struct overmap_spawns {
     string_id<MonsterGroup> group;
     numeric_interval<int> population;
 
-    bool operator==(const overmap_spawns& rhs) const {
+    auto operator==(const overmap_spawns& rhs) const -> bool {
         return group == rhs.group && population == rhs.population;
     }
 
@@ -107,7 +107,7 @@ protected:
 struct overmap_static_spawns: public overmap_spawns {
     int chance = 0;
 
-    bool operator==(const overmap_static_spawns& rhs) const {
+    auto operator==(const overmap_static_spawns& rhs) const -> bool {
         return overmap_spawns::operator==(rhs) && chance == rhs.chance;
     }
 
@@ -179,15 +179,15 @@ public:
     overmap_static_spawns static_spawns;
     bool was_loaded = false;
 
-    std::string get_symbol() const;
+    auto get_symbol() const -> std::string;
 
     oter_type_t() = default;
 
-    oter_id get_first() const;
-    oter_id get_rotated(om_direction::type dir) const;
-    oter_id get_linear(size_t n) const;
+    auto get_first() const -> oter_id;
+    auto get_rotated(om_direction::type dir) const -> oter_id;
+    auto get_linear(size_t n) const -> oter_id;
 
-    bool has_flag(oter_flags flag) const { return flags[flag]; }
+    auto has_flag(oter_flags flag) const -> bool { return flags[flag]; }
 
     void set_flag(oter_flags flag, bool value = true) { flags.set(flag, value); }
 
@@ -195,15 +195,15 @@ public:
     void check() const;
     void finalize();
 
-    bool is_rotatable() const {
+    auto is_rotatable() const -> bool {
         return !has_flag(oter_flags::no_rotate) && !has_flag(oter_flags::line_drawing);
     }
 
-    bool is_linear() const { return has_flag(oter_flags::line_drawing); }
+    auto is_linear() const -> bool { return has_flag(oter_flags::line_drawing); }
 
-    bool has_connections() const { return !connect_group.empty(); }
+    auto has_connections() const -> bool { return !connect_group.empty(); }
 
-    bool connects_to(const oter_type_id& other) const {
+    auto connects_to(const oter_type_id& other) const -> bool {
         return has_connections() && connect_group == other->connect_group;
     }
 
@@ -227,72 +227,72 @@ public:
     oter_t(const oter_type_t& type, om_direction::type dir);
     oter_t(const oter_type_t& type, size_t line);
 
-    const oter_type_str_id& get_type_id() const { return type->id; }
+    auto get_type_id() const -> const oter_type_str_id& { return type->id; }
 
-    std::string get_mapgen_id() const;
-    oter_id get_rotated(om_direction::type dir) const;
+    auto get_mapgen_id() const -> std::string;
+    auto get_rotated(om_direction::type dir) const -> oter_id;
 
-    std::string get_name() const { return _(type->name); }
+    auto get_name() const -> std::string { return _(type->name); }
 
-    std::string get_symbol(const bool from_land_use_code = false) const {
+    auto get_symbol(const bool from_land_use_code = false) const -> std::string {
         return utf32_to_utf8(from_land_use_code ? symbol_alt : symbol);
     }
 
-    uint32_t get_uint32_symbol() const { return symbol; }
+    auto get_uint32_symbol() const -> uint32_t { return symbol; }
 
-    nc_color get_color(const bool from_land_use_code = false) const {
+    auto get_color(const bool from_land_use_code = false) const -> nc_color {
         return from_land_use_code ? type->land_use_code->color : type->color;
     }
 
     // dir is only meaningful for rotatable, non-linear terrain.  If you
     // need an answer that also works for linear terrain, call
     // get_rotation() instead.
-    om_direction::type get_dir() const { return dir; }
+    auto get_dir() const -> om_direction::type { return dir; }
 
-    size_t get_line() const { return line; }
+    auto get_line() const -> size_t { return line; }
     void get_rotation_and_subtile(int& rotation, int& subtile) const;
-    int get_rotation() const;
+    auto get_rotation() const -> int;
 
-    unsigned char get_see_cost() const { return type->see_cost; }
-    unsigned char get_travel_cost() const { return type->travel_cost; }
+    auto get_see_cost() const -> unsigned char { return type->see_cost; }
+    auto get_travel_cost() const -> unsigned char { return type->travel_cost; }
 
-    const std::string& get_extras() const { return type->extras; }
+    auto get_extras() const -> const std::string& { return type->extras; }
 
-    int get_mondensity() const { return type->mondensity; }
+    auto get_mondensity() const -> int { return type->mondensity; }
 
-    const overmap_static_spawns& get_static_spawns() const { return type->static_spawns; }
+    auto get_static_spawns() const -> const overmap_static_spawns& { return type->static_spawns; }
 
-    overmap_land_use_code_id get_land_use_code() const { return type->land_use_code; }
+    auto get_land_use_code() const -> overmap_land_use_code_id { return type->land_use_code; }
 
-    bool type_is(const oter_type_id& type_id) const;
-    bool type_is(const oter_type_t& type) const;
+    auto type_is(const oter_type_id& type_id) const -> bool;
+    auto type_is(const oter_type_t& type) const -> bool;
 
-    bool has_connection(om_direction::type dir) const;
+    auto has_connection(om_direction::type dir) const -> bool;
 
-    bool has_flag(oter_flags flag) const { return type->has_flag(flag); }
+    auto has_flag(oter_flags flag) const -> bool { return type->has_flag(flag); }
 
-    bool is_hardcoded() const;
+    auto is_hardcoded() const -> bool;
 
-    bool is_rotatable() const { return type->is_rotatable(); }
+    auto is_rotatable() const -> bool { return type->is_rotatable(); }
 
-    bool is_linear() const { return type->is_linear(); }
+    auto is_linear() const -> bool { return type->is_linear(); }
 
-    bool is_river() const { return type->has_flag(oter_flags::river_tile); }
+    auto is_river() const -> bool { return type->has_flag(oter_flags::river_tile); }
 
-    bool is_wooded() const {
+    auto is_wooded() const -> bool {
         return type->land_use_code == land_use_code_forest
             || type->land_use_code == land_use_code_wetland
             || type->land_use_code == land_use_code_wetland_forest
             || type->land_use_code == land_use_code_wetland_saltwater;
     }
 
-    bool is_lake() const { return type->has_flag(oter_flags::lake); }
+    auto is_lake() const -> bool { return type->has_flag(oter_flags::lake); }
 
-    bool is_lake_shore() const { return type->has_flag(oter_flags::lake_shore); }
+    auto is_lake_shore() const -> bool { return type->has_flag(oter_flags::lake_shore); }
 
     // Comparison operators for Lua bindings
-    bool operator==(const oter_t& rhs) const { return id == rhs.id; }
-    bool operator<(const oter_t& rhs) const { return id < rhs.id; }
+    auto operator==(const oter_t& rhs) const -> bool { return id == rhs.id; }
+    auto operator<(const oter_t& rhs) const -> bool { return id < rhs.id; }
 
 private:
     om_direction::type dir = om_direction::type::none;
@@ -302,8 +302,8 @@ private:
 };
 
 // TODO: Deprecate these operators
-bool operator==(const oter_id& lhs, const char* rhs);
-bool operator!=(const oter_id& lhs, const char* rhs);
+auto operator==(const oter_id& lhs, const char* rhs) -> bool;
+auto operator!=(const oter_id& lhs, const char* rhs) -> bool;
 
 namespace overmap_terrains {
 
@@ -312,7 +312,7 @@ void check_consistency();
 void finalize();
 void reset();
 
-const std::vector<oter_t>& get_all();
+auto get_all() -> const std::vector<oter_t>&;
 
 } // namespace overmap_terrains
 
@@ -323,6 +323,6 @@ void finalize();
 void check_consistency();
 void reset();
 
-const std::vector<overmap_land_use_code>& get_all();
+auto get_all() -> const std::vector<overmap_land_use_code>&;
 
 } // namespace overmap_land_use_codes

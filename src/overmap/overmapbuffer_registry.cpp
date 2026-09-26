@@ -35,7 +35,7 @@ public:
 
     // Non-copyable
     overmapbuffer_registry(const overmapbuffer_registry&) = delete;
-    overmapbuffer_registry& operator=(const overmapbuffer_registry&) = delete;
+    auto operator=(const overmapbuffer_registry&) -> overmapbuffer_registry& = delete;
 
     auto get(const dimension_id& dim_id) -> overmapbuffer& { // *NOPAD*
         auto it = buffers_.find(dim_id);
@@ -66,7 +66,7 @@ private:
     std::map<dimension_id, std::unique_ptr<overmapbuffer>> buffers_;
 };
 
-overmapbuffer_registry& registry() {
+auto registry() -> overmapbuffer_registry& {
     static overmapbuffer_registry instance;
     return instance;
 }

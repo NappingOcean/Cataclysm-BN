@@ -26,7 +26,8 @@ IMPLEMENT_STRING_AND_INT_IDS(overmap_connection, connections);
 
 namespace io {
 
-template <> std::string enum_to_string<overmap_connection_layout>(overmap_connection_layout data) {
+template <>
+auto enum_to_string<overmap_connection_layout>(overmap_connection_layout data) -> std::string {
     switch (data) {
         // *INDENT-OFF*
         case overmap_connection_layout::city:
@@ -48,7 +49,7 @@ static const std::map<std::string, overmap_connection::subtype::flag> connection
         {"ORTHOGONAL", overmap_connection::subtype::flag::orthogonal},
 };
 
-bool overmap_connection::subtype::allows_terrain(const oter_id& oter) const {
+auto overmap_connection::subtype::allows_terrain(const oter_id& oter) const -> bool {
     if (oter->type_is(terrain)) {
         return true; // Can be built on similar terrains.
     } else {
@@ -85,7 +86,7 @@ overmap_connection::overmap_connection(overmap_connection&& other) noexcept {
     *this = std::move(other);
 }
 
-overmap_connection& overmap_connection::operator=(const overmap_connection& other) {
+auto overmap_connection::operator=(const overmap_connection& other) -> overmap_connection& {
     auto _ = std::lock_guard{mutex};
     auto __ = std::lock_guard{other.mutex};
 
@@ -98,7 +99,7 @@ overmap_connection& overmap_connection::operator=(const overmap_connection& othe
     return *this;
 }
 
-overmap_connection& overmap_connection::operator=(overmap_connection&& other) noexcept {
+auto overmap_connection::operator=(overmap_connection&& other) noexcept -> overmap_connection& {
     auto _ = std::lock_guard{mutex};
     auto __ = std::lock_guard{other.mutex};
 
@@ -116,8 +117,8 @@ void overmap_connection::clear_subtype_cache() const {
     cached_subtypes.clear();
 }
 
-const overmap_connection::subtype* overmap_connection::pick_subtype_for(
-    const oter_id& ground) const {
+auto overmap_connection::pick_subtype_for(const oter_id& ground) const
+    -> const overmap_connection::subtype* {
     if (!ground) { return nullptr; }
 
     {
@@ -177,12 +178,12 @@ const overmap_connection::subtype* overmap_connection::pick_subtype_for(
     return result;
 }
 
-bool overmap_connection::can_start_at(const oter_id& ground) const {
+auto overmap_connection::can_start_at(const oter_id& ground) const -> bool {
     const overmap_connection::subtype* subtype = overmap_connection::pick_subtype_for(ground);
     return subtype != nullptr && subtype->allows_turns();
 }
 
-bool overmap_connection::has(const oter_id& oter) const {
+auto overmap_connection::has(const oter_id& oter) const -> bool {
     return std::ranges::find_if(
                subtypes, [&oter](const subtype& elem) { return oter->type_is(elem.terrain); })
         != subtypes.cend();
@@ -231,7 +232,7 @@ void check_consistency() { connections.check(); }
 
 void reset() { connections.reset(); }
 
-overmap_connection_id guess_for(const oter_id& oter) {
+auto guess_for(const oter_id& oter) -> overmap_connection_id {
     const auto& all = connections.get_all();
     const auto iter = std::ranges::find_if(all, [&oter](const overmap_connection& elem) {
         return elem.pick_subtype_for(oter) != nullptr;
@@ -240,6 +241,8 @@ overmap_connection_id guess_for(const oter_id& oter) {
     return iter != all.cend() ? iter->id : overmap_connection_id::NULL_ID();
 }
 
-overmap_connection_id guess_for(const oter_type_id& oter) { return guess_for(oter->get_first()); }
+auto guess_for(const oter_type_id& oter) -> overmap_connection_id {
+    return guess_for(oter->get_first());
+}
 
 } // namespace overmap_connections

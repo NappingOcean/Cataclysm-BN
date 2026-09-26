@@ -35,7 +35,7 @@ class overmap;
 struct overmap_special_spawns: public overmap_spawns {
     numeric_interval<int> radius;
 
-    bool operator==(const overmap_special_spawns& rhs) const {
+    auto operator==(const overmap_special_spawns& rhs) const -> bool {
         return overmap_spawns::operator==(rhs) && radius == rhs.radius;
     }
 
@@ -57,7 +57,7 @@ struct overmap_special_locations {
      * Returns whether this terrain of the special can be placed on the specified terrain.
      * It's true if oter meets any of locations.
      */
-    bool can_be_placed_on(const oter_id& oter) const;
+    auto can_be_placed_on(const oter_id& oter) const -> bool;
     void deserialize(JsonIn& jsin);
 };
 
@@ -103,37 +103,42 @@ class overmap_special {
 public:
     overmap_special() = default;
     overmap_special(const overmap_special_id& i, const overmap_special_terrain& ter);
-    overmap_special_subtype get_subtype() const { return subtype_; }
+    auto get_subtype() const -> overmap_special_subtype { return subtype_; }
 
-    const overmap_special_placement_constraints& get_constraints() const { return constraints_; }
-    bool is_rotatable() const { return rotatable_; }
-    bool can_spawn() const;
+    auto get_constraints() const -> const overmap_special_placement_constraints& {
+        return constraints_;
+    }
+    auto is_rotatable() const -> bool { return rotatable_; }
+    auto can_spawn() const -> bool;
     /** Returns terrain at the given point. */
-    const oter_str_id& get_terrain_at(const tripoint_rel_omt& p) const;
+    auto get_terrain_at(const tripoint_rel_omt& p) const -> const oter_str_id&;
     /** @returns true if this special requires a city */
-    bool requires_city() const;
+    auto requires_city() const -> bool;
     /** @returns whether the special at specified tripoint can belong to the specified city. */
-    bool can_belong_to_city(const tripoint_om_omt& p, const city& cit) const;
+    auto can_belong_to_city(const tripoint_om_omt& p, const city& cit) const -> bool;
 
-    const mapgen_parameters& get_params() const { return mapgen_params_; }
-    mapgen_arguments get_args(const mapgendata&) const;
+    auto get_params() const -> const mapgen_parameters& { return mapgen_params_; }
+    auto get_args(const mapgendata&) const -> mapgen_arguments;
 
-    const cata::flat_set<std::string>& get_flags() const { return flags_; }
-    bool has_flag(const std::string& flag) const { return flags_.count(flag); }
+    auto get_flags() const -> const cata::flat_set<std::string>& { return flags_; }
+    auto has_flag(const std::string& flag) const -> bool { return flags_.count(flag); }
     void set_flag(const std::string& flag) { flags_.insert(flag); }
-    bool use_absolute_spawn_loc() const { return use_absolute_spawn_loc_; }
-    bool at_absolute_spawn_loc(point_abs_om point) const { return point == absolute_spawn_loc_; }
+    auto use_absolute_spawn_loc() const -> bool { return use_absolute_spawn_loc_; }
+    auto at_absolute_spawn_loc(point_abs_om point) const -> bool {
+        return point == absolute_spawn_loc_;
+    }
 
-    int longest_side() const;
-    std::vector<oter_str_id> all_terrains() const;
-    std::vector<overmap_special_terrain> preview_terrains() const;
-    std::vector<overmap_special_locations> required_locations() const;
+    auto longest_side() const -> int;
+    auto all_terrains() const -> std::vector<oter_str_id>;
+    auto preview_terrains() const -> std::vector<overmap_special_terrain>;
+    auto required_locations() const -> std::vector<overmap_special_locations>;
 
-    special_placement_result place(
-        overmap& om, const tripoint_om_omt& origin, om_direction::type dir) const;
+    auto place(overmap& om, const tripoint_om_omt& origin, om_direction::type dir) const
+        -> special_placement_result;
 
-    const overmap_special_spawns& get_monster_spawns() const { return monster_spawns_; }
-    const std::unordered_map<tripoint_rel_omt, overmap_special_id>& get_nested_specials() const {
+    auto get_monster_spawns() const -> const overmap_special_spawns& { return monster_spawns_; }
+    auto get_nested_specials() const
+        -> const std::unordered_map<tripoint_rel_omt, overmap_special_id>& {
         return nested_;
     }
 
@@ -181,13 +186,13 @@ void finalize_mapgen_parameters();
 void check_consistency();
 void reset();
 
-const std::vector<overmap_special>& get_all();
+auto get_all() -> const std::vector<overmap_special>&;
 
-overmap_special_batch get_default_batch(const point_abs_om& origin);
+auto get_default_batch(const point_abs_om& origin) -> overmap_special_batch;
 /**
  * Generates a simple special from a building id.
  */
-overmap_special_id create_building_from(const oter_type_str_id& base);
+auto create_building_from(const oter_type_str_id& base) -> overmap_special_id;
 
 } // namespace overmap_specials
 
@@ -217,15 +222,15 @@ public:
 
     // Wrapper methods that make overmap_special_batch act like
     // the underlying vector of overmap placements.
-    std::vector<overmap_special_placement>::iterator begin() { return placements.begin(); }
-    std::vector<overmap_special_placement>::iterator end() { return placements.end(); }
-    std::vector<overmap_special_placement>::iterator erase(
-        std::vector<overmap_special_placement>::iterator pos) {
+    auto begin() -> std::vector<overmap_special_placement>::iterator { return placements.begin(); }
+    auto end() -> std::vector<overmap_special_placement>::iterator { return placements.end(); }
+    auto erase(std::vector<overmap_special_placement>::iterator pos)
+        -> std::vector<overmap_special_placement>::iterator {
         return placements.erase(pos);
     }
-    bool empty() { return placements.empty(); }
+    auto empty() -> bool { return placements.empty(); }
 
-    point_abs_om get_origin() const { return origin_overmap; }
+    auto get_origin() const -> point_abs_om { return origin_overmap; }
 
 private:
     std::vector<overmap_special_placement> placements;

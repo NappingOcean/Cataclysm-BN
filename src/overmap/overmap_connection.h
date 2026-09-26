@@ -34,10 +34,10 @@ public:
 
         int weight = 1;
 
-        bool allows_terrain(const oter_id& oter) const;
-        bool allows_turns() const { return terrain->is_linear(); }
+        auto allows_terrain(const oter_id& oter) const -> bool;
+        auto allows_turns() const -> bool { return terrain->is_linear(); }
 
-        bool is_orthogonal() const { return flags.contains(flag::orthogonal); }
+        auto is_orthogonal() const -> bool { return flags.contains(flag::orthogonal); }
 
         void load(const JsonObject& jo);
         void deserialize(JsonIn& jsin);
@@ -50,17 +50,17 @@ public:
 public:
     overmap_connection() = default;
     overmap_connection(const overmap_connection& other);
-    overmap_connection& operator=(const overmap_connection& other);
+    auto operator=(const overmap_connection& other) -> overmap_connection&;
 
     overmap_connection(overmap_connection&& other) noexcept;
-    overmap_connection& operator=(overmap_connection&& other) noexcept;
+    auto operator=(overmap_connection&& other) noexcept -> overmap_connection&;
 
-    const subtype* pick_subtype_for(const oter_id& ground) const;
+    auto pick_subtype_for(const oter_id& ground) const -> const subtype*;
     void clear_subtype_cache() const;
-    bool can_start_at(const oter_id& ground) const;
-    bool has(const oter_id& oter) const;
+    auto can_start_at(const oter_id& ground) const -> bool;
+    auto has(const oter_id& oter) const -> bool;
 
-    const overmap_connection_layout& get_layout() const { return layout; }
+    auto get_layout() const -> const overmap_connection_layout& { return layout; }
 
     void load(const JsonObject& jo, const std::string& src);
     void check() const;
@@ -92,7 +92,7 @@ void finalize();
 void check_consistency();
 void reset();
 
-overmap_connection_id guess_for(const oter_type_id& oter);
-overmap_connection_id guess_for(const oter_id& oter);
+auto guess_for(const oter_type_id& oter) -> overmap_connection_id;
+auto guess_for(const oter_id& oter) -> overmap_connection_id;
 
 } // namespace overmap_connections

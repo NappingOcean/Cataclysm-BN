@@ -21,13 +21,15 @@ template <> struct enum_traits<cube_direction> {
 
 namespace std {
 template <> struct hash<cube_direction> {
-    std::size_t operator()(const cube_direction& d) const { return static_cast<std::size_t>(d); }
+    auto operator()(const cube_direction& d) const -> std::size_t {
+        return static_cast<std::size_t>(d);
+    }
 };
 } // namespace std
 
-cube_direction operator+(cube_direction, om_direction::type);
-cube_direction operator+(cube_direction, int i);
-cube_direction operator-(cube_direction, om_direction::type);
-cube_direction operator-(cube_direction, int i);
+auto operator+(cube_direction, om_direction::type) -> cube_direction;
+auto operator+(cube_direction, int i) -> cube_direction;
+auto operator-(cube_direction, om_direction::type) -> cube_direction;
+auto operator-(cube_direction, int i) -> cube_direction;
 
-tripoint displace(cube_direction d);
+auto displace(cube_direction d) -> tripoint;

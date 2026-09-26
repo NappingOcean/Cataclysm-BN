@@ -110,7 +110,7 @@ namespace overmap_ui {
 // persistent data for distribution grid debug drawing
 struct grids_draw_data {
 public:
-    std::optional<char> get_active(const tripoint_abs_omt& omp) {
+    auto get_active(const tripoint_abs_omt& omp) -> std::optional<char> {
         // TODO: fix point types
         uintptr_t id = get_distribution_grid_tracker().debug_grid_id(omp);
         if (id == 0) { return std::nullopt; }
@@ -130,7 +130,7 @@ public:
         return c;
     }
 
-    std::optional<char> get_inactive(const tripoint_abs_omt& omp) {
+    auto get_inactive(const tripoint_abs_omt& omp) -> std::optional<char> {
         std::set<tripoint_abs_omt> grid = ACTIVE_OVERMAP_BUFFER.electric_grid_at(omp);
         if (grid.size() <= 1) { return std::nullopt; }
         std::vector<tripoint_abs_omt> sorted(grid.begin(), grid.end());
@@ -164,7 +164,7 @@ public:
 
 private:
     // Fn(char) -> bool
-    template <typename Fn> std::optional<char> pick_char(Fn filter_func) {
+    template <typename Fn> auto pick_char(Fn filter_func) -> std::optional<char> {
         static std::string candidates("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
         for (char c : candidates) {
             if (filter_func(c)) { return c; }
@@ -198,7 +198,7 @@ struct note_display_info {
     std::optional<std::string> sprite_id;
 };
 
-static note_display_info get_note_display_info_full(const std::string& note) {
+static auto get_note_display_info_full(const std::string& note) -> note_display_info {
     note_display_info result;
     bool set_color = false;
     bool set_symbol = false;
@@ -258,17 +258,17 @@ static note_display_info get_note_display_info_full(const std::string& note) {
 }
 
 // {note symbol, note color, offset to text}
-std::tuple<char, nc_color, size_t> get_note_display_info(const std::string& note) {
+auto get_note_display_info(const std::string& note) -> std::tuple<char, nc_color, size_t> {
     const note_display_info result = get_note_display_info_full(note);
     return std::make_tuple(result.symbol, result.color, result.text_offset);
 }
 
-std::optional<std::string> get_note_sprite_id(const std::string& note) {
+auto get_note_sprite_id(const std::string& note) -> std::optional<std::string> {
     return get_note_display_info_full(note).sprite_id;
 }
 
-static std::array<std::pair<nc_color, std::string>, npm_width * npm_height> get_overmap_neighbors(
-    const tripoint_abs_omt& current) {
+static auto get_overmap_neighbors(const tripoint_abs_omt& current)
+    -> std::array<std::pair<nc_color, std::string>, npm_width * npm_height> {
     const bool has_debug_vision = get_player_character().has_trait(trait_DEBUG_NIGHTVISION);
 
     std::array<std::pair<nc_color, std::string>, npm_width * npm_height> map_around;
@@ -342,7 +342,7 @@ static void update_note_preview(
     wnoutrefresh(*w_preview_map);
 }
 
-weather_type_id get_weather_at_point(const point_abs_omt& pos) {
+auto get_weather_at_point(const point_abs_omt& pos) -> weather_type_id {
     // Weather calculation is a bit expensive, so it's cached here.
     static std::map<point_abs_omt, weather_type_id> weather_cache;
     static time_point last_weather_display = calendar::before_time_starts;
@@ -362,8 +362,8 @@ weather_type_id get_weather_at_point(const point_abs_omt& pos) {
     return iter->second;
 }
 
-static bool get_scent_glyph(
-    const tripoint_abs_omt& pos, nc_color& ter_color, std::string& ter_sym) {
+static auto get_scent_glyph(const tripoint_abs_omt& pos, nc_color& ter_color, std::string& ter_sym)
+    -> bool {
     auto possible_scent = ACTIVE_OVERMAP_BUFFER.scent_at(pos);
     if (possible_scent.creation_time != calendar::before_time_starts) {
         color_manager& color_list = get_all_colors();
@@ -479,7 +479,7 @@ static auto draw_map_labels(const catacurses::window& w, const tripoint_abs_omt&
     }
 }
 
-static bool query_confirm_delete(bool& ask_when_deleting) {
+static auto query_confirm_delete(bool& ask_when_deleting) -> bool {
     if (!ask_when_deleting) { return true; }
 
     uilist qry;
@@ -519,7 +519,7 @@ private:
     std::tuple<catacurses::window*, catacurses::window*, catacurses::window*> preview_windows;
     ui_adaptor ui;
 
-    tripoint_abs_omt note_location() { return (*_notes)[_selected].p; }
+    auto note_location() -> tripoint_abs_omt { return (*_notes)[_selected].p; }
 
 public:
     bool ask_when_deleting = true;
@@ -548,7 +548,8 @@ public:
         });
     }
 
-    bool key(const input_context& ctxt, const input_event& event, int, uilist* menu) override {
+    auto key(const input_context& ctxt, const input_event& event, int, uilist* menu)
+        -> bool override {
         const std::string& action = ctxt.input_to_action(event);
         if (action == "CHANGE_SORT") {
             menu->ret = UILIST_CHANGE_SORT;
@@ -615,7 +616,7 @@ enum class sort_mode_t : int {
     num,
 };
 
-static bool sortfunc_dist(const note_cached& a, const note_cached& b) {
+static auto sortfunc_dist(const note_cached& a, const note_cached& b) -> bool {
     if (a.dist_from_pl == b.dist_from_pl) {
         // Compare points to get stable order
         return a.p < b.p;
@@ -624,7 +625,7 @@ static bool sortfunc_dist(const note_cached& a, const note_cached& b) {
     }
 }
 
-static bool sortfunc_name(const note_cached& a, const note_cached& b) {
+static auto sortfunc_name(const note_cached& a, const note_cached& b) -> bool {
     if (a.text_nocolor == b.text_nocolor) {
         return sortfunc_dist(a, b);
     } else {
@@ -632,7 +633,7 @@ static bool sortfunc_name(const note_cached& a, const note_cached& b) {
     }
 }
 
-static bool sortfunc_symbol(const note_cached& a, const note_cached& b) {
+static auto sortfunc_symbol(const note_cached& a, const note_cached& b) -> bool {
     if (a.symbol == b.symbol) {
         return sortfunc_name(a, b);
     } else {
@@ -642,7 +643,7 @@ static bool sortfunc_symbol(const note_cached& a, const note_cached& b) {
     }
 }
 
-static tripoint_abs_omt show_notes_manager(const tripoint_abs_omt& origin) {
+static auto show_notes_manager(const tripoint_abs_omt& origin) -> tripoint_abs_omt {
     tripoint_abs_omt result = tripoint_abs_omt(tripoint_min);
 
     bool ask_when_deleting = true;
@@ -1627,7 +1628,8 @@ static void create_note(const tripoint_abs_omt& curs) {
 }
 
 // if false, search yielded no results
-static bool search(const ui_adaptor& om_ui, tripoint_abs_omt& curs, const tripoint_abs_omt& orig) {
+static auto search(const ui_adaptor& om_ui, tripoint_abs_omt& curs, const tripoint_abs_omt& orig)
+    -> bool {
     std::string term =
         string_input_popup()
             .title(_("Search term:"))
@@ -1941,8 +1943,8 @@ static void set_special_args(tripoint_abs_omt& curs) {
     *maybe_args = args;
 }
 
-static std::vector<tripoint_abs_omt> get_overmap_path_to(
-    const tripoint_abs_omt dest, bool driving) {
+static auto get_overmap_path_to(const tripoint_abs_omt dest, bool driving)
+    -> std::vector<tripoint_abs_omt> {
     if (!ACTIVE_OVERMAP_BUFFER.seen(dest)) { return {}; }
     const Character& player_character = get_player_character();
     map& here = get_map();
@@ -1991,8 +1993,8 @@ static std::vector<tripoint_abs_omt> get_overmap_path_to(
     }
 }
 
-static tripoint_abs_omt display(
-    const tripoint_abs_omt& orig, const draw_data_t& data = draw_data_t()) {
+static auto display(const tripoint_abs_omt& orig, const draw_data_t& data = draw_data_t())
+    -> tripoint_abs_omt {
     // the overmap context may be shared with the main view's; each view re-asserts zoom on takeover
     g->reapply_overmap_zoom();
     on_out_of_scope reset_zoom([]() {
@@ -2298,15 +2300,15 @@ void ui::omap::display_zones(
     overmap_ui::display(center, data);
 }
 
-tripoint_abs_omt ui::omap::choose_point() {
+auto ui::omap::choose_point() -> tripoint_abs_omt {
     return overmap_ui::display(get_player_character().abs_omt_pos());
 }
 
-tripoint_abs_omt ui::omap::choose_point(const tripoint_abs_omt& origin) {
+auto ui::omap::choose_point(const tripoint_abs_omt& origin) -> tripoint_abs_omt {
     return overmap_ui::display(origin);
 }
 
-tripoint_abs_omt ui::omap::choose_point(int z) {
+auto ui::omap::choose_point(int z) -> tripoint_abs_omt {
     tripoint_abs_omt loc = get_player_character().abs_omt_pos();
     loc.z() = z;
     return overmap_ui::display(loc);

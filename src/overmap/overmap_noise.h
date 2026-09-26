@@ -16,7 +16,7 @@ public:
      * Noise value at the provided overmap terrain location.
      * @param omt_local point location in overmap terrain local coordinates.
      */
-    virtual float noise_at(const point_om_omt& omt_local) const = 0;
+    virtual auto noise_at(const point_om_omt& omt_local) const -> float = 0;
     virtual ~om_noise_layer() = default;
 
 protected:
@@ -31,11 +31,11 @@ protected:
           // Narrowing conversion into float, as the noise functions we use only accept floats.
           seed(seed % SIMPLEX_NOISE_RANDOM_SEED_LIMIT) {}
 
-    point_abs_omt global_omt_pos(const point_om_omt& local_omt_pos) const {
+    auto global_omt_pos(const point_om_omt& local_omt_pos) const -> point_abs_omt {
         return om_global_base_point + local_omt_pos.raw();
     }
 
-    float get_seed() const { return seed; }
+    auto get_seed() const -> float { return seed; }
 
 private:
     point_abs_omt om_global_base_point;
@@ -47,7 +47,7 @@ public:
     om_noise_layer_forest(const point_abs_omt& global_base_point, unsigned seed)
         : om_noise_layer(global_base_point, seed) {}
 
-    float noise_at(const point_om_omt& local_omt_pos) const override;
+    auto noise_at(const point_om_omt& local_omt_pos) const -> float override;
 };
 
 class om_noise_layer_floodplain: public om_noise_layer {
@@ -55,7 +55,7 @@ public:
     om_noise_layer_floodplain(const point_abs_omt& global_base_point, unsigned seed)
         : om_noise_layer(global_base_point, seed) {}
 
-    float noise_at(const point_om_omt& local_omt_pos) const override;
+    auto noise_at(const point_om_omt& local_omt_pos) const -> float override;
 };
 
 class om_noise_layer_lake: public om_noise_layer {
@@ -63,7 +63,7 @@ public:
     om_noise_layer_lake(const point_abs_omt& global_base_point, unsigned seed)
         : om_noise_layer(global_base_point, seed) {}
 
-    float noise_at(const point_om_omt& local_omt_pos) const override;
+    auto noise_at(const point_om_omt& local_omt_pos) const -> float override;
 };
 
 } // namespace om_noise

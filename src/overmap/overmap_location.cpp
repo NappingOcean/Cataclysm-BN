@@ -21,13 +21,13 @@ generic_factory<overmap_location> locations("overmap location");
 
 IMPLEMENT_STRING_AND_INT_IDS(overmap_location, locations);
 
-bool overmap_location::test(const oter_id& oter) const {
+auto overmap_location::test(const oter_id& oter) const -> bool {
     return std::ranges::any_of(terrains, [&oter](const oter_type_str_id& type) {
         return oter->type_is(type);
     });
 }
 
-oter_type_id overmap_location::get_random_terrain() const { return random_entry(terrains); }
+auto overmap_location::get_random_terrain() const -> oter_type_id { return random_entry(terrains); }
 
 void overmap_location::load(const JsonObject& jo, const std::string&) {
     optional(jo, was_loaded, "flags", flags);
@@ -37,7 +37,7 @@ void overmap_location::load(const JsonObject& jo, const std::string&) {
     }
 }
 
-std::vector<oter_type_id> overmap_location::get_all_terrains() const {
+auto overmap_location::get_all_terrains() const -> std::vector<oter_type_id> {
     std::vector<oter_type_id> ret;
     ret.reserve(terrains.size());
     for (oter_type_str_id elem : terrains) { ret.emplace_back(elem); }
