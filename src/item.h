@@ -1,20 +1,10 @@
 #pragma once
 
-#include <climits>
-#include <cstdint>
-#include <functional>
-#include <map>
-#include <optional>
-#include <set>
-#include <string>
-#include <type_traits>
-#include <utility>
-#include <vector>
-
 #include "calendar.h"
 #include "catalua_icallback_actor.h"
 #include "coordinates.h"
 #include "damage.h"
+#include "data_vars.h"
 #include "detached_ptr.h"
 #include "dimension_info.h"
 #include "enums.h"
@@ -25,14 +15,24 @@
 #include "item_contents.h"
 #include "kill_tracker.h"
 #include "location_vector.h"
-#include "overmapbuffer.h"
+#include "overmap/overmapbuffer.h"
 #include "pimpl.h"
 #include "string_id.h"
 #include "type_id.h"
 #include "units.h"
 #include "value_ptr.h"
 #include "visitable.h"
-#include "data_vars.h"
+
+#include <climits>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <optional>
+#include <set>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 class Character;
 class JsonIn;
@@ -212,37 +212,6 @@ inline iteminfo::flags &operator|=( iteminfo::flags &l, iteminfo::flags r )
     return l = l | r;
 }
 
-class item_reload_option
-{
-    public:
-        item_reload_option() = default;
-
-        item_reload_option( const item_reload_option & );
-        item_reload_option &operator=( const item_reload_option & );
-
-        item_reload_option( const player *who, item *target, const item *parent,
-                            item &ammo );
-
-        const player *who = nullptr;
-        item *target = nullptr;
-        item *ammo;
-
-        int qty() const {
-            return qty_;
-        }
-        void qty( int val );
-
-        int moves() const;
-
-        explicit operator bool() const {
-            return who && target && ammo && qty_ > 0;
-        }
-
-    private:
-        int qty_ = 0;
-        int max_qty = INT_MAX;
-        const item *parent = nullptr;
-};
 
 inline bool is_crafting_component( const item &component );
 
@@ -1553,11 +1522,10 @@ class item : public location_visitable<item>, public game_object<item>
         void on_damage( int qty, damage_type dt );
 
         /**
-         * Callback after an item is placed on the map, for any reason
-         * @param m The Map
-         * @param p Where in the map
+         * Callback after an item is placed, for any reason, including lazy load
+         * @param p Where was it placed
          */
-        void on_map_placement( const map &m, const tripoint_bub_ms &p );
+        void on_map_placement( const tripoint_abs_ms &abs_pos );
 
         std::vector<trait_id> mutations_from_wearing( const Character &guy ) const;
 

@@ -1,5 +1,6 @@
 #include "mapgen_constructor.h"
 
+#include "../overmap/overmapbuffer.h"
 #include "artifact.h"
 #include "catalua_hooks.h"
 #include "catalua_sol.h"
@@ -23,9 +24,8 @@
 #include "mapgendata.h"
 #include "mongroup.h"
 #include "npc.h"
-#include "omdata.h"
 #include "options.h"
-#include "overmapbuffer.h"
+#include "overmap/omdata.h"
 #include "point.h"
 #include "point_float.h"
 #include "rng.h"
@@ -523,6 +523,7 @@ auto mapgen_constructor::add_item(const point_omt_ms& p, detached_ptr<item>&& ne
     sm->is_uniform = false;
     sm->update_lum_add(local, *new_item);
     if (new_item->needs_processing()) { sm->active_items.add(*new_item); }
+    new_item->on_map_placement(project_combine(abs_offset_, p));
     sm->get_items(local).push_back(std::move(new_item));
 }
 

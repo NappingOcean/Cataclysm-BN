@@ -13,6 +13,7 @@
 #include "calendar.h"
 #include "catacharset.h"
 #include "catalua.h"
+#include "catalua_hooks.h"
 #include "character.h"
 #include "character_display.h"
 #include "character_martial_arts.h"
@@ -64,7 +65,7 @@
 #include "npc.h"
 #include "options.h"
 #include "output.h"
-#include "overmap_ui.h"
+#include "overmap/overmap_ui.h"
 #include "panels.h"
 #include "player.h"
 #include "player_activity.h"
@@ -730,7 +731,7 @@ static void close()
 static auto jump() -> void
 {
     auto &you = get_avatar();
-    if( !iexamine::can_start_jump_over_tile( you, true ) ) {
+    if( !iexamine::can_start_jump_over_tile( you ) ) {
         return;
     }
 
@@ -1467,7 +1468,7 @@ static void loot()
     }
     if( flags & MultiFarmPlots ) {
         menu.addentry_desc( MultiFarmPlots, true, 'm', _( "Farm plots" ),
-                            _( "Till and plant on any nearby farm plots - auto-fetch seeds and tools." ) );
+                            _( "Till, plant, and harvest on any nearby farm plots - auto-fetch seeds and tools." ) );
     }
     if( flags & Multichoptrees ) {
         menu.addentry_desc( Multichoptrees, true, 'C', _( "Chop trees" ),
@@ -1804,6 +1805,16 @@ auto try_cast_spell( player &u, spell &sp ) -> bool
         add_msg( game_message_params{ m_bad, gmf_bypass_cooldown },
                  _( "You cannot cast Blood Magic without a cutting implement." ) );
         return false;
+    }
+
+    const auto hook_results = cata::run_hooks( "on_spell_try_cast", [&]( sol::table & params ) {
+        params["char"] = &u;
+        params["spell"] = &sp;
+    } );
+    if( !hook_results.get_or( "allowed", true ) ) { return false; }
+
+    if( sp.type->lua_callbacks ) {
+        if( !sp.type->lua_callbacks->call_on_try_cast( *u.as_character(), sp ) ) { return false;}
     }
 
     start_spellcasting_activity( u, sp );

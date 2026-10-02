@@ -66,7 +66,7 @@
 #include "npc_class.h"
 #include "npc_favor.h" // IWYU pragma: associated
 #include "options.h"
-#include "overmapbuffer.h"
+#include "overmap/overmapbuffer.h"
 #include "pickup_token.h"
 #include "pimpl.h"
 #include "player.h"
@@ -4346,6 +4346,7 @@ void stats_tracker::deserialize( JsonIn &jsin )
 void submap::store( JsonOut &jsout ) const
 {
     jsout.member( "turn_last_touched", last_touched );
+    jsout.member( "turn_last_actualized", last_actualized );
     jsout.member( "temperature", temperature );
 
     // Terrain is saved using a simple RLE scheme.  Legacy saves don't have
@@ -4492,6 +4493,11 @@ void submap::store( JsonOut &jsout ) const
                 jsout.write( cur.get_field_type().id() );
                 jsout.write( cur.get_field_intensity() );
                 jsout.write( cur.get_field_age() );
+                if( cur.electricity_conducted ) {
+                    jsout.start_object();
+                    jsout.member( "electricity_conducted", true );
+                    jsout.end_object();
+                }
             }
             jsout.end_array();
         }
@@ -4613,6 +4619,10 @@ void submap::load( JsonIn &jsin, const std::string &member_name, int version,
         last_touched = calendar::turn_zero + time_duration::from_turns( jsin.get_int() );
         // Guard against corrupted saves: last_touched must not be in the future.
         last_touched = std::min( last_touched, calendar::turn );
+    } else if( member_name == "turn_last_actualized" ) {
+        last_actualized = calendar::turn_zero + time_duration::from_turns( jsin.get_int() );
+        // Guard against corrupted saves: last_touched must not be in the future.
+        last_actualized = std::min( last_actualized, calendar::turn );
     } else if( member_name == "temperature" ) {
         temperature = jsin.get_int();
     } else if( member_name == "terrain" ) {
@@ -4753,6 +4763,11 @@ void submap::load( JsonIn &jsin, const std::string &member_name, int version,
                     field_cache.push_back( point_sm_ms( i, j ) );
                 }
                 fld[i][j].add_field( ft, intensity, time_duration::from_turns( age ) );
+                if( jsin.test_object() ) {
+                    auto metadata = jsin.get_object();
+                    fld[i][j].find_field( ft )->electricity_conducted =
+                        metadata.get_bool( "electricity_conducted", false );
+                }
             }
         }
     } else if( member_name == "graffiti" ) {

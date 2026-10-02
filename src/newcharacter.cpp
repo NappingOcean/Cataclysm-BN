@@ -1161,7 +1161,7 @@ tab_direction set_stats( avatar &u, points_left &points )
                 mvwprintz( w_description, point( 0, 2 ), COL_STAT_BONUS, _( "Night vision bonus: +%.1f" ),
                            vision::nv_range_from_per( u.per_max ) );
                 fold_and_print( w_description, point( 0, 4 ), getmaxx( w_description ) - 1, COL_STAT_NEUTRAL,
-                                _( "Perception is also used for detecting traps and other things of interest." ) );
+                                _( "Perception is also used for detecting traps, camouflaged creatures, and other things of interest." ) );
                 break;
         }
 
@@ -3765,7 +3765,15 @@ tab_direction set_description( avatar &you, const bool allow_reroll,
                                 c_white, "\t" + string_format( _( "%s level %d" ), spell_pair.first->name, spell_pair.second ) );
                 pos++;
             }
-        } else {
+        }
+        if( you.magic->knows_spell() ) {
+            for( const spell *spell : you.magic->get_spells() ) {
+                trim_and_print( w_bionics, point( 0, pos ), getmaxx( w_bionics ) - 1,
+                                c_white, "\t" + string_format( _( "%s level %d" ), spell->id()->name, spell->get_level() ) );
+                pos++;
+            }
+        }
+        if( you.prof->spells().empty() && !you.magic->knows_spell() ) {
             wprintz( w_bionics, c_light_red, _( "None!" ) );
         }
 

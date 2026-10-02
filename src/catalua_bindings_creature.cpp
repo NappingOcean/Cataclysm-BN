@@ -85,7 +85,16 @@ struct lua_activity_options {
 
 auto parse_lua_activity_options( const sol::table &opts ) -> lua_activity_options
 {
-    const auto pos = opts.get<sol::optional<tripoint_bub_ms>>( "pos" );
+    // Read the pos option through the direct coord conversion helper.
+    // Going through sol::optional<tripoint_bub_ms> relies on sol's ADL-based
+    // conversion dispatch, which silently drops the option on MSVC builds.
+    std::optional<tripoint_bub_ms> pos;
+    if( const sol::object raw_pos = opts["pos"]; raw_pos.get_type() == sol::type::userdata ) {
+        pos = cata::detail::lua_coords::as_cpp<tripoint_bub_ms>( raw_pos );
+        if( !pos ) {
+            debugmsg( "assign_lua_activity: pos option is not a TripointBubMs coordinate" );
+        }
+    }
     const auto on_finish = opts.get<sol::optional<std::string>>( "on_finish" );
     const auto on_turn = opts.get<sol::optional<std::string>>( "on_turn" );
     const auto interruptable = opts.get<sol::optional<bool>>( "interruptable" );
@@ -94,7 +103,7 @@ auto parse_lua_activity_options( const sol::table &opts ) -> lua_activity_option
         .duration = opts.get<time_duration>( "duration" ),
         .on_finish = on_finish.value_or( "" ),
         .on_turn = on_turn.value_or( "" ),
-        .pos = pos ? std::make_optional( *pos ) : std::nullopt,
+        .pos = pos,
         .name = opts.get_or<std::string>( "name", "" ),
         .interruptable = interruptable.value_or( true ),
         .data = {},
@@ -1112,7 +1121,9 @@ void cata::detail::reg_character( sol::state &lua )
             c.i_add( std::move( i ) );
         } );
 
-        DOC( "Creates and an item with the given id and amount to the player inventory" );
+        DOC( "Creates an item with the given id and adds it to the player inventory." );
+        DOC( "`count` sets the item's charges, not the number of items: exactly one item is created." );
+        DOC( "For stackable (count-by-charges) items such as ammo, `count` is the stack size. For non-stackable items, pass a negative value (e.g. -1), since a positive one is still applied as charges. Tools spawned with a negative value get their default charges." );
         luna::set_fx( ut, "create_item", []( UT_CLASS & c, const itype_id & itype, int count )
         {
             return &c.add_item_with_id( itype, count );

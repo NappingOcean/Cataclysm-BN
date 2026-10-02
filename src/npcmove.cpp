@@ -47,15 +47,17 @@
 #include "npc_class.h"
 #include "npctalk.h"
 #include "options.h"
-#include "overmap.h"
-#include "overmap_location.h"
-#include "overmapbuffer.h"
-#include "overmapbuffer_registry.h"
+#include "overmap/overmap.h"
+#include "overmap/overmap_location.h"
+#include "overmap/overmapbuffer.h"
+#include "overmap/overmapbuffer_registry.h"
 #include "player_activity.h"
 #include "pldata.h"
 #include "profile.h"
 #include "projectile.h"
 #include "ranged.h"
+#include "reload/reload.h"
+#include "reload/reload_selection.h"
 #include "ret_val.h"
 #include "rng.h"
 #include "sounds.h"
@@ -325,7 +327,7 @@ static bool clear_shot_reach( const tripoint_bub_ms &from, const tripoint_bub_ms
         Creature *inter = g->critter_at( p );
         if( check_ally && inter != nullptr ) {
             return false;
-        } else if( get_map().impassable( p ) ) {
+        } else if( get_map().impassable( p ) && !get_map().has_flag( "MOUNTABLE", p ) ) {
             return false;
         } else if( get_map().obstructed_by_vehicle_rotation( last_point, p ) ) {
             return false;
@@ -992,18 +994,23 @@ void npc::move()
 
     map &here = get_map();
     if( !ai_cache.dangerous_explosives.empty() ) {
+        ZoneScopedN( "npc_escape_explode_selector" );
         action = npc_escape_explosion;
     } else if( target == &player_character && attitude == NPCATT_FLEE_TEMP ) {
+        ZoneScopedN( "npc_fleeing_selector" );
         action = method_of_fleeing();
     } else if( has_effect( effect_npc_run_away ) ) {
+        ZoneScopedN( "npc_fleeing_selector" );
         action = method_of_fleeing();
     } else if( has_effect( effect_asthma ) && ( has_charges( itype_inhaler, 1 ) ||
                has_charges( itype_oxygen_tank, 1 ) ||
                has_charges( itype_smoxygen_tank, 1 ) ) ) {
         action = npc_heal;
     } else if( target != nullptr && ai_cache.danger > 0 ) {
+        ZoneScopedN( "npc_attack_selector" );
         action = method_of_attack();
     } else if( !ai_cache.sound_alerts.empty() && !is_walking_with() ) {
+        ZoneScopedN( "npc_investigate_sound_selector" );
         auto cur_s_abs_pos = ai_cache.s_abs_pos;
         if( !ai_cache.guard_pos ) {
             ai_cache.guard_pos = abs_pos();
@@ -1033,6 +1040,7 @@ void npc::move()
                      ai_cache.s_abs_pos.x(), ai_cache.s_abs_pos.y() );
         }
     } else {
+        ZoneScopedN( "npc_idle_selector" );
         if( sleep_at_this_pos.has_value() ) {
             action = npc_sleep;
         }
@@ -1041,6 +1049,7 @@ void npc::move()
 
         // Deactivate Armor & Weapons
         for( auto &elem : worn ) {
+            ZoneScopedN( "npc_disable_combat_selector" );
             // The is_active() part was taken from is_wearing_active_power_armor
             if( elem->has_flag( flag_COMBAT_NPC_USE ) && elem->has_flag( flag_COMBAT_NPC_ON ) ) {
                 if( elem->get_use( "transform" ) ) {
@@ -1055,6 +1064,7 @@ void npc::move()
         item &weapon = primary_weapon();
         if( !weapon.is_null() && weapon.has_flag( flag_COMBAT_NPC_USE ) &&
             weapon.has_flag( flag_COMBAT_NPC_ON ) ) {
+            ZoneScopedN( "npc_disable_weapon_selector" );
             if( weapon.get_use( "transform" ) ) {
                 invoke_item( &weapon, "transform" );
                 recalculate_enchantment_cache();
@@ -1210,6 +1220,7 @@ void npc::execute_action( const std::string &action_str )
 
 void npc::execute_action( npc_action action )
 {
+    ZoneScoped;
     const auto oldmoves = moves;
     auto tar = bub_pos();
     auto *cur = static_cast<Creature *>( nullptr );
@@ -1832,7 +1843,7 @@ void npc::check_or_reload_cbm()
     if( !checklist.empty() ) {
         for( auto& [bid, itm] : checklist ) {
             bionic &bio = get_bionic_state( bid );
-            const item *it_loc = character_funcs::select_ammo( *this, *itm ).ammo;
+            const item *it_loc = reload_selection::prepare( *this, *itm ).selected.ammo;
             if( it_loc && wants_to_reload_with( *itm, *it_loc, ai_cache.danger > 0 ) ) {
                 do_reload( *itm );
                 bio.ammo_loaded =
@@ -1864,7 +1875,7 @@ item &npc::find_reloadable()
         if( !wants_to_reload( *this, *node ) ) {
             return VisitResponse::NEXT;
         }
-        const auto it_loc = character_funcs::select_ammo( *this, *node ).ammo;
+        const auto it_loc = reload_selection::prepare( *this, *node ).selected.ammo;
         if( it_loc && wants_to_reload_with( *node, *it_loc, ai_cache.danger > 0 ) ) {
             reloadable = node;
             return VisitResponse::ABORT;
@@ -1901,7 +1912,7 @@ item *npc::find_usable_ammo( item &weap )
         return nullptr;
     }
 
-    auto loc = character_funcs::select_ammo( *this, weap ).ammo;
+    auto loc = reload_selection::prepare( *this, weap ).selected.ammo;
     if( !loc || !wants_to_reload_with( weap, *loc, ai_cache.danger > 0 ) ) {
         return nullptr;
     }
@@ -2140,12 +2151,14 @@ healing_options npc::patient_assessment( const Character &c )
 
 npc_action npc::address_needs( float danger )
 {
+    ZoneScoped;
     Character &player_character = get_player_character();
     // rng because NPCs are not meant to be hypervigilant hawks that notice everything
     // and swing into action with alarming alacrity.
     // no sometimes they are just looking the other way, sometimes they hestitate.
     // ( also we can get huge performance boosts )
     if( one_in( 3 ) ) {
+        ZoneScopedN( "npc_address_needs_try_to_heal" );
         healing_options try_to_fix_me = patient_assessment( *this );
         if( try_to_fix_me.any_true() ) {
             if( !use_bionic_by_id( bio_nanobots ) ) {
@@ -2185,6 +2198,7 @@ npc_action npc::address_needs( float danger )
     }
 
     if( one_in( 3 ) ) {
+        ZoneScopedN( "npc_address_needs_bio_painkiller" );
         if( get_perceived_pain() >= 15 ) {
             if( !activate_bionic_by_id( bio_painkiller ) && has_painkiller() && !took_painkiller() ) {
                 return npc_use_painkiller;
@@ -2195,10 +2209,14 @@ npc_action npc::address_needs( float danger )
     }
 
     if( one_in( 3 ) && can_reload_current() ) {
+        ZoneScopedN( "npc_address_needs_reload_gun" );
         return npc_reload;
     }
 
-    check_or_reload_cbm();
+    {
+        ZoneScopedN( "npc_address_needs_reload_cbm" );
+        check_or_reload_cbm();
+    }
 
     item &reloadable = find_reloadable();
     if( !reloadable.is_null() ) {
@@ -2209,12 +2227,14 @@ npc_action npc::address_needs( float danger )
     // Extreme thirst or hunger, bypass safety check.
     if( get_thirst() > thirst_levels::dehydrated ||
         get_stored_kcal() + stomach.get_calories() < max_stored_kcal() * 0.75 ) {
+        ZoneScopedN( "npc_address_needs_food" );
         if( consume_food() ) {
             return npc_noop;
         }
     }
     //Does the hallucination needs to disappear ?
     if( is_hallucination() && player_character.sees( *this ) ) {
+        ZoneScopedN( "npc_address_needs_hallu" );
         if( !player_character.has_effect( effect_hallu ) ) {
             die( nullptr );
         }
@@ -2226,6 +2246,7 @@ npc_action npc::address_needs( float danger )
 
     if( one_in( 3 ) && ( get_thirst() > thirst_levels::thirsty ||
                          get_stored_kcal() + stomach.get_calories() < max_stored_kcal() * 0.95 ) ) {
+        ZoneScopedN( "npc_address_needs_food" );
         if( consume_food() ) {
             return npc_noop;
         }
@@ -2933,6 +2954,7 @@ void npc::move_to( const tripoint_bub_ms &pt, bool no_bashing, std::set<tripoint
         }
 
         here.creature_on_trap( *this );
+        here.creature_in_field( *this, /*movement_only=*/true );
         here.creature_in_field( *this );
     }
 }
@@ -5023,7 +5045,7 @@ void npc::do_reload( item &it )
         move_pause();
         return;
     }
-    item_reload_option reload_opt = character_funcs::select_ammo( *this, it );
+    auto reload_opt = reload_selection::prepare( *this, it ).selected;
 
     if( !reload_opt ) {
         debugmsg( "do_reload failed: no usable ammo for %s", it.tname() );

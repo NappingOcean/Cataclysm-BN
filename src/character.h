@@ -455,6 +455,8 @@ class Character : public Creature, public location_visitable<Character>
         tripoint_abs_ms abs_pos() const override;
         /** Returns the player's sight range */
         int sight_range( int light_level ) const override;
+        /** Returns the range at which the player can spot camouflaged creatures */
+        int  spotting_range() const override;
         /** Returns the player maximum vision range factoring in mutations, diseases, and other effects */
         int  unimpaired_range() const;
         /** Returns true if overmap tile is within player line-of-sight */
@@ -595,6 +597,7 @@ class Character : public Creature, public location_visitable<Character>
         character_movemode get_movement_mode() const;
 
         virtual void set_movement_mode( character_movemode mode ) = 0;
+        void force_movement_mode( character_movemode mode );
 
         /**Determine if character is susceptible to dis_type and if so apply the symptoms*/
         void expose_to_disease( diseasetype_id dis_type );
@@ -861,6 +864,8 @@ class Character : public Creature, public location_visitable<Character>
         bool is_limb_broken( const bodypart_id &limb ) const;
         /** source of truth of whether a Character can run */
         bool can_run();
+        /** source of truth of whether a Character can run */
+        void try_remove_downed( Character &c );
         /** Hurts all body parts for dam, no armor reduction */
         void hurtall( int dam, Creature *source, bool disturb = true );
         /** Harms all body parts for dam, with armor reduction. If vary > 0 damage to parts are random within vary % (1-100) */
@@ -1435,6 +1440,9 @@ class Character : public Creature, public location_visitable<Character>
         std::vector<detached_ptr<item>> inv_dump_remove();
 
         units::mass weight_carried() const;
+        // TODO: See if we can move all weight_carried instances to this
+        // Recalculating the cache requires this to be non-constant
+        units::mass cached_weight_carried();
         units::volume volume_carried() const;
 
         units::mass weight_carried_reduced_by( const excluded_stacks &without ) const;
@@ -1954,6 +1962,11 @@ class Character : public Creature, public location_visitable<Character>
     protected:
         void on_damage_of_type( int adjusted_damage, damage_type type, const bodypart_id &bp ) override;
         location_inventory inv;
+    private:
+        units::mass worn_weight_cache;
+        bool worn_weight_cache_dirty = true;
+        units::mass wielded_weight_cache;
+        bool wielded_weight_cache_drity = true;
     public:
 
         /** Called when an item is worn */
@@ -2298,7 +2311,8 @@ class Character : public Creature, public location_visitable<Character>
         bool avoid_trap( const tripoint_bub_ms &pos, const trap &tr ) const override;
 
         // see Creature::sees
-        bool sees( const tripoint_bub_ms &t, bool is_player = false, int range_mod = 0 ) const override;
+        bool sees( const tripoint_bub_ms &t, bool is_player = false, int range_limit = 0,
+                   double range_mod = 1 ) const override;
         // see Creature::sees
         bool sees( const Creature &critter ) const override;
         Attitude attitude_to( const Creature &other ) const override;

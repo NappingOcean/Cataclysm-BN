@@ -665,6 +665,17 @@ void Item_factory::finalize_post( itype &obj )
         return false;
     } );
 
+    if( !obj.magazines.empty() ) {
+        for( const auto [ammotype, mags] : obj.magazines ) {
+            for( const auto &mag : mags ) {
+                if( magazines_like.contains( mag ) ) {
+                    const auto &mags_like = magazines_like[mag];
+                    obj.magazines[ammotype].insert( mags_like.begin(), mags_like.end() );
+                }
+            }
+        }
+    }
+
     // handle complex firearms as a special case
     if( obj.gun && !obj.has_flag( flag_PRIMITIVE_RANGED_WEAPON ) ) {
         std::copy( gun_tools.begin(), gun_tools.end(), std::inserter( obj.repair, obj.repair.begin() ) );
@@ -691,15 +702,6 @@ void Item_factory::finalize_post( itype &obj )
         }
     }
 
-    if( !obj.magazines.empty() ) {
-        for( const auto &[mag, mags_like] : magazines_like ) {
-            for( const auto [ammotype, mags] : obj.magazines ) {
-                if( mags.contains( mag ) ) {
-                    obj.magazines[ammotype].insert( mags_like.begin(), mags_like.end() );
-                }
-            }
-        }
-    }
     if( obj.mod && !obj.mod->magazine_adaptor.empty() ) {
         for( const auto &[mag, mags_like] : magazines_like ) {
             for( const auto [ammotype, mags] : obj.mod->magazine_adaptor ) {
@@ -2914,6 +2916,8 @@ void Item_factory::load_basic_info( const JsonObject &jo, itype &def, const std:
             def.drop_action = fun;
         }
     }
+
+    assign( jo, "spill_field", def.spill_field );
 
     jo.read( "looks_like", def.looks_like );
 

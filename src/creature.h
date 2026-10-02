@@ -345,7 +345,8 @@ class Creature
          */
         /*@{*/
         virtual bool sees( const Creature &critter ) const;
-        virtual bool sees( const tripoint_bub_ms &t, bool is_avatar = false, int range_mod = 0 ) const;
+        virtual bool sees( const tripoint_bub_ms &t, bool is_avatar = false, int range_limit = 0,
+                           double range_mod = 1 ) const;
         /*@}*/
 
         /**
@@ -635,6 +636,7 @@ class Creature
         /** Returns melee skill level, to be used to throttle dodge practice. **/
         virtual float get_melee() const = 0;
         virtual float get_hit() const;
+        virtual int spotting_range() const;
 
         virtual int get_speed() const;
         virtual creature_size get_size() const = 0;

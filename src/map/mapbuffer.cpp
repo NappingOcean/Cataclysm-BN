@@ -1,5 +1,6 @@
 #include "mapbuffer.h"
 
+#include "../overmap/overmapbuffer.h"
 #include "avatar.h"
 #include "batch_turns.h"
 #include "calendar.h"
@@ -32,7 +33,6 @@
 #include "npc.h"
 #include "options.h"
 #include "output.h"
-#include "overmapbuffer.h"
 #include "popup.h"
 #include "profile.h"
 #include "rng.h"
@@ -1109,6 +1109,7 @@ void mapbuffer::clear() {
     }
     std::lock_guard<std::mutex> pw_lk(pending_writes_mutex_);
     pending_writes_.clear();
+    transaction_pending_writes_.clear();
 }
 
 auto mapbuffer::add_submap(const tripoint_abs_sm& p, std::unique_ptr<submap>& sm) -> bool {
@@ -1828,8 +1829,6 @@ auto mapbuffer::valid_move(
     const auto& up_ter = up_tile->get_ter_t();
     if (up_ter.id.is_null()) { return false; }
     const auto& up_furn = up_tile->get_furn_t();
-    const auto up_trap_id = up_tile->get_trap();
-    const auto up_is_ledge = up_ter.trap == tr_ledge || up_trap_id == tr_ledge;
 
     if (up_ter.movecost == 0) { return false; }
 
@@ -1838,9 +1837,9 @@ auto mapbuffer::valid_move(
     const auto& down_ter = down_tile->get_ter_t();
     if (down_ter.id.is_null()) { return false; }
 
-    if (!up_is_ledge && down_ter.movecost == 0) { return false; }
+    if (down_ter.movecost == 0) { return false; }
 
-    if (!up_ter.has_flag(TFLAG_NO_FLOOR) && !up_ter.has_flag(TFLAG_GOES_DOWN) && !up_is_ledge
+    if (!up_ter.has_flag(TFLAG_NO_FLOOR) && !up_ter.has_flag(TFLAG_GOES_DOWN)
         && !options.via_ramp) {
         if (std::abs(from.x() - to.x()) == 1 || std::abs(from.y() - to.y()) == 1) {
             const auto midpoint = tripoint_abs_ms(down_p.xy(), up_p.z());
@@ -1850,7 +1849,7 @@ auto mapbuffer::valid_move(
     }
 
     if (!options.flying && !down_ter.has_flag(TFLAG_GOES_UP) && !down_ter.has_flag(TFLAG_RAMP)
-        && !up_is_ledge && !options.via_ramp) {
+        && !down_ter.has_flag(TFLAG_CLIMBABLE) && !options.via_ramp) {
         return false;
     }
 
@@ -2377,7 +2376,9 @@ auto mapbuffer::add_item_or_charges(
             return false;
         }
         if (new_item->made_of(LIQUID) || !new_item->has_flag(flag_DROP_ACTION_ONLY_IF_LIQUID)) {
-            return new_item->on_drop(*local, g->m);
+            const auto destroyed = new_item->on_drop(*local, g->m);
+            if (destroyed) { new_item = detached_ptr<item>(); }
+            return destroyed;
         }
         return false;
     };
@@ -3150,6 +3151,11 @@ void mapbuffer::save(bool delete_after_save, bool notify_tracker, bool show_prog
     std::map<tripoint_abs_omt, std::string> pending_snapshot;
     {
         std::lock_guard<std::mutex> pw_lk(pending_writes_mutex_);
+        if (g->get_active_world()->is_save_tx_active()) {
+            for (const auto& [omt_addr, data] : pending_writes_) {
+                transaction_pending_writes_.insert_or_assign(omt_addr, data);
+            }
+        }
         pending_snapshot = std::move(pending_writes_);
     }
     std::ranges::for_each(pending_snapshot, [&](auto& entry) {
@@ -3165,6 +3171,15 @@ void mapbuffer::save(bool delete_after_save, bool notify_tracker, bool show_prog
                 });
         }
     });
+}
+
+auto mapbuffer::finish_save_tx(bool committed) -> void {
+    const auto lock = std::lock_guard<std::mutex>(pending_writes_mutex_);
+    if (!committed) {
+        // Any newer pending version takes precedence over the failed save's snapshot.
+        pending_writes_.merge(transaction_pending_writes_);
+    }
+    transaction_pending_writes_.clear();
 }
 
 void mapbuffer::save_omt(
@@ -3514,7 +3529,7 @@ auto mapbuffer::actualize_submap(const tripoint_abs_sm& pos) -> void {
 
     for (const auto p : submap_tiles()) {
         const auto abs_pos = project_combine(pos, p);
-        const auto options = actualize_tile_options{
+        auto options = actualize_tile_options{
             .buffer = *this,
             .sm = *tmpsub,
             .local = p,
@@ -3524,6 +3539,9 @@ auto mapbuffer::actualize_submap(const tripoint_abs_sm& pos) -> void {
             .elapsed = elapsed,
             .lookup = lookup_options,
         };
+        // Elapsed has two modes depending on when it is done
+        // It starts with anything that occurs while actively simulated
+
         auto& items = tmpsub->get_items(p);
         if (!items.empty()) {
             const auto& furn = tmpsub->get_furn(p).obj();
@@ -3531,15 +3549,18 @@ auto mapbuffer::actualize_submap(const tripoint_abs_sm& pos) -> void {
         }
 
         if (do_funnels) { fill_funnels(options); }
+        decay_cosmetic_fields(options);
 
+        // These dont happen while simulated
+        options.elapsed = calendar::turn - tmpsub->last_actualized;
         grow_plant(options);
         restock_fruits(options);
         produce_sap(options);
         rad_scorch(options);
-        decay_cosmetic_fields(options);
     }
 
     tmpsub->last_touched = calendar::turn;
+    tmpsub->last_actualized = calendar::turn;
 }
 
 auto mapbuffer::drain_pending_submap_destroy() -> void {

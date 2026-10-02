@@ -65,8 +65,8 @@
 #include "npc.h"
 #include "options.h"
 #include "output.h"
-#include "overmap.h"
-#include "overmapbuffer.h"
+#include "overmap/overmap.h"
+#include "overmap/overmapbuffer.h"
 #include "pimpl.h"
 #include "player.h"
 #include "player_activity.h"
@@ -3173,7 +3173,7 @@ void item::armor_fit_info( std::vector<iteminfo> &info, const iteminfo_query *pa
             }
         } else {
             info.emplace_back( "DESCRIPTION", _( "* This clothing <bad>can not be refitted, "
-                                                 "upsized, or downsized</bad>." ) );
+                                                 "upsized, or downsized</bad> to fit abnormal anatomy without <bad>extensive modifications</bad>, but should <info>fit everyone with normal anatomy</info>." ) );
         }
     }
 
@@ -5144,19 +5144,18 @@ void item::on_damage( int qty, damage_type )
     }
 }
 
-void item::on_map_placement( const map &m, const tripoint_bub_ms &p )
+void item::on_map_placement( const tripoint_abs_ms &abs_pos )
 {
 
     // TODO: Move to reveal_map_actor
     if( is_map() && !has_var( "reveal_map_center_omt" ) ) {
-        const auto abs_pos = map_local_to_abs( m, p );
         set_var( "reveal_map_center_omt", project_to<coords::omt>( abs_pos ) );
     }
 
     for( const auto &func : type->use_methods | std::views::values ) {
         const auto actor = func.get_actor_ptr();
         if( actor != nullptr ) {
-            actor->on_placed( *this, m, p );
+            actor->on_placed( *this, abs_pos );
         }
     }
 }
@@ -9214,81 +9213,6 @@ bool item::units_sufficient( const Character &ch, int qty ) const
     return units_remaining( ch, qty ) == qty;
 }
 
-item_reload_option::item_reload_option( const item_reload_option & ) = default;
-
-item_reload_option &item_reload_option::operator=( const item_reload_option & ) = default;
-
-item_reload_option::item_reload_option( const player *who, item *target, const item *parent,
-                                        item &ammo ) :
-    who( who ), target( target ), ammo( &ammo ), parent( parent )
-{
-    if( this->target->is_ammo_belt() ) {
-        const auto &linkage = this->target->type->magazine->linkage ;
-        if( linkage ) {
-            max_qty = this->who->charges_of( *linkage );
-        }
-    }
-    qty( max_qty );
-}
-
-int item_reload_option::moves() const
-{
-    int mv = ammo->obtain_cost( *who, qty() ) + who->item_reload_cost( *target, *ammo, qty() );
-    if( parent != target ) {
-        if( parent->is_gun() ) {
-            mv += parent->get_reload_time();
-        } else if( parent->is_tool() ) {
-            mv += 100;
-        }
-    }
-    return mv;
-}
-
-void item_reload_option::qty( int val )
-{
-    bool ammo_in_ammo_container = ammo->is_ammo_container();
-    bool ammo_in_container = ammo->is_container();
-    item &ammo_obj = ( ammo_in_ammo_container || ammo_in_container ) ?
-                     ammo->contents.front() : *ammo;
-
-    if( ammo_in_ammo_container && !ammo_obj.is_ammo() ) {
-        debugmsg( "Invalid reload option: %s", ammo_obj.tname() );
-        return;
-    }
-
-    // Checking ammo capacity implicitly limits guns with removable magazines to capacity 0.
-    // This gets rounded up to 1 later.
-    int remaining_capacity = 0;
-    if( target->is_watertight_container() && ammo_obj.made_of( LIQUID ) ) {
-        remaining_capacity = target->get_remaining_capacity_for_liquid( ammo_obj, true );
-    } else if( target->is_container() && ammo_obj.is_comestible() ) {
-        remaining_capacity = ammo_obj.charges_per_volume( target->get_container_capacity() );
-        if( !target->is_container_empty() ) {
-            remaining_capacity -= target->ammo_remaining();
-        }
-    } else {
-        remaining_capacity = target->ammo_capacity() - target->ammo_remaining();
-    }
-    if( target->has_flag( flag_RELOAD_ONE ) && !ammo->has_flag( flag_SPEEDLOADER ) ) {
-        remaining_capacity = 1;
-    }
-    if( ammo_obj.type->ammo ) {
-        if( ammo_obj.ammo_type() == ammo_plutonium ) {
-            remaining_capacity = remaining_capacity / PLUTONIUM_CHARGES +
-                                 ( remaining_capacity % PLUTONIUM_CHARGES != 0 );
-        }
-    }
-
-    bool ammo_by_charges = ammo_obj.is_ammo() || ammo_in_container || ammo->is_comestible();
-    int available_ammo = ammo_by_charges ? ammo_obj.charges : ammo_obj.ammo_remaining();
-    // constrain by available ammo, target capacity and other external factors (max_qty)
-    // @ref max_qty is currently set when reloading ammo belts and limits to available linkages
-    qty_ = std::min( { val, available_ammo, remaining_capacity, max_qty } );
-
-    // always expect to reload at least one charge
-    qty_ = std::max( qty_, 1 );
-
-}
 
 int item::casings_count() const
 {
@@ -11719,9 +11643,17 @@ bool item::on_drop( const tripoint_bub_ms &pos, map &m )
         !has_own_flag( flag_DIRTY ) ) {
         set_flag( flag_DIRTY );
     }
+
+    const auto spilled_to_field =
+        made_of( LIQUID ) && type->spill_field != fd_null && !m.has_flag( flag_LIQUIDCONT, pos );
+    if( spilled_to_field ) {
+        m.spill_liquid_field( pos, *this );
+    }
     you.flag_encumbrance();
 
-    return type->drop_action && type->drop_action.call( you, *this, false, pos );
+    const auto handled_by_drop_action =
+        type->drop_action && type->drop_action.call( you, *this, false, pos );
+    return spilled_to_field || handled_by_drop_action;
 }
 
 time_duration item::age() const

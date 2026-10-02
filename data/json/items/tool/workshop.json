@@ -117,7 +117,7 @@
     "material": [ "steel", "plastic" ],
     "symbol": "/",
     "color": "yellow",
-    "qualities": [ [ "GRIND", 2 ] ],
+    "qualities": [ [ "GRIND", 2 ], [ "SANDING", 1 ] ],
     "ammo": "battery",
     "charges_per_use": 1,
     "power_draw": 800000,

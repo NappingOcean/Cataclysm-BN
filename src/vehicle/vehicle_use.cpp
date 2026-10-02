@@ -1,3 +1,4 @@
+#include "../overmap/overmapbuffer.h"
 #include "action.h"
 #include "activity_handlers.h"
 #include "avatar.h"
@@ -27,10 +28,11 @@
 #include "monster.h"
 #include "mtype.h"
 #include "output.h"
-#include "overmapbuffer.h"
 #include "pickup.h"
 #include "player.h"
 #include "player_activity.h"
+#include "reload/reload.h"
+#include "reload/reload_ui.h"
 #include "requirements.h"
 #include "rng.h"
 #include "sounds.h"
@@ -2112,7 +2114,7 @@ void vehicle::interact_with(const tripoint_bub_ms& pos, int interact_part) {
             return;
         }
         case RELOAD_TURRET: {
-            item_reload_option opt = character_funcs::select_ammo(you, turret.base(), true);
+            auto opt = reload_ui::select_ammo(you, turret.base(), {.prompt = true});
             if (opt) {
                 you.assign_activity(ACT_RELOAD, opt.moves(), opt.qty());
                 you.activity->targets.emplace_back(turret.base());

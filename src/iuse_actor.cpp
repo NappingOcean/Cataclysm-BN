@@ -31,6 +31,7 @@
 #include "enum_conversions.h"
 #include "enums.h"
 #include "explosion.h"
+#include "field_ignition_utils.h"
 #include "faction.h"
 #include "flag.h"
 #include "flat_set.h"
@@ -67,15 +68,17 @@
 #include "npc.h"
 #include "options.h"
 #include "output.h"
-#include "overmap.h"
-#include "overmap_special.h"
-#include "overmap_ui.h"
+#include "overmap/overmap.h"
+#include "overmap/overmap_special.h"
+#include "overmap/overmap_ui.h"
 #include "player.h"
 #include "player_activity.h"
 #include "pldata.h"
 #include "popup.h"
 #include "recipe.h"
 #include "recipe_dictionary.h"
+#include "reload/reload.h"
+#include "reload/reload_ui.h"
 #include "requirements.h"
 #include "rng.h"
 #include "skill.h"
@@ -1806,7 +1809,14 @@ bool firestarter_actor::prep_firestarter_use( const player &p, tripoint_bub_ms &
 
 void firestarter_actor::resolve_firestarter_use( player &p, const tripoint_bub_ms &pos )
 {
-    if( get_map().add_field( pos, fd_fire, 1, 10_minutes ) ) {
+    map &here = get_map();
+    const auto fuel = flammable_fields( here.get_field( pos ) );
+    const auto fuel_intensity = fuel.intensity;
+    for( const auto type : fuel.types ) {
+        here.remove_field( pos, type );
+    }
+    if( here.add_field( pos, fd_fire, fuel_field_fire_intensity( fuel_intensity ),
+                        fuel_field_fire_age( fuel_intensity ) ) ) {
         if( !p.has_trait( trait_PYROMANIA ) ) {
             p.add_msg_if_player( _( "You successfully light a fire." ) );
         } else {
@@ -3126,7 +3136,7 @@ bool bandolier_actor::reload( player &p, item &obj ) const
         return item_reload_option( &p, &obj, &obj, *e );
     } );
 
-    item_reload_option sel = character_funcs::select_ammo( p, obj, std::move( opts ) );
+    auto sel = reload_ui::select_ammo( p, obj, std::move( opts ) );
     if( !sel ) {
         return false; // canceled menu
     }
@@ -3234,7 +3244,7 @@ int ammobelt_actor::use( player &p, item &, bool, const tripoint_bub_ms & ) cons
         return 0;
     }
 
-    item_reload_option opt = character_funcs::select_ammo( p, *mag, true );
+    auto opt = reload_ui::select_ammo( p, *mag, { .prompt = true } );
     if( opt ) {
         p.assign_activity( ACT_RELOAD, opt.moves(), opt.qty() );
         p.activity->targets.emplace_back( &*mag );
@@ -3830,7 +3840,7 @@ std::string repair_item_actor::get_name() const
     []( const material_id & mid ) {
         return _( mid->name() );
     } );
-    return string_format( _( "Repair %s" ), mats );
+    return string_format( _( "Repair/Refit %s" ), mats );
 }
 
 void heal_actor::load( const JsonObject &obj )
@@ -5903,17 +5913,76 @@ int multicooker_iuse::use( player &p, item &it, bool t, const tripoint_bub_ms &p
 {
     if( t ) {
         if( !it.units_sufficient( p, charges_per_minute ) ) {
+            for( detached_ptr<item> &item : it.remove_components() ) {
+                get_map().add_item_or_charges( pos, std::move( item ) );
+            }
             it.deactivate();
+            it.erase_var( "RESULT" );
+            it.erase_var( "COOKTIME" );
+            it.erase_var( "BATCHCOUNT" );
+            it.erase_var( "RECIPE" );
             return 0;
         }
 
-        int cooktime = it.get_var( "COOKTIME", 0 );
+        int cooktime = it.get_var( "COOKTIME", -1 );
         cooktime -= 100;
 
-        if( cooktime <= 0 ) {
+        if( cooktime <= 0 && it.get_var( "RESULT" ) != "" ) {
             it.deactivate();
             it.erase_var( "COOKTIME" );
-            it.put_in( item::spawn( it.get_var( "RESULT" ), calendar::turn, it.get_var( "BATCHCOUNT", 1 ) ) );
+
+            //mirroring a lot of behavior in complete_craft except for set_kcal_mult
+            //you dont get kcal benifits from your cooking skill because you didnt actually craft the item
+
+            std::vector<detached_ptr<item>> used = it.remove_components();
+            std::vector<item *> used_items;
+            used_items.reserve( used.size() );
+            for( detached_ptr<item> &it : used ) {
+                used_items.push_back( &*it );
+            }
+
+            auto crafted_item = item::spawn( it.get_var( "RESULT" ), calendar::turn, it.get_var( "BATCHCOUNT",
+                                             1 ) );
+
+            //basically just a copy past of inherit_flags() to well... inherit flags
+            //cant use the existing method as it requires passing a recipe and we dont have that
+            for( const item * const &item : used_items ) {
+                for( const flag_id &f : item->get_flags() ) {
+                    if( f->craft_inherit() ) {
+                        crafted_item->set_flag( f );
+                    }
+                }
+                for( const flag_id &f : item->type->get_flags() ) {
+                    if( f->craft_inherit() ) {
+                        crafted_item->set_flag( f );
+                    }
+                }
+                if( item->has_flag( flag_HIDDEN_POISON ) ) {
+                    crafted_item->poison = item->poison;
+                }
+            }
+
+            if( crafted_item->is_food() && !( crafted_item->has_flag( flag_NUTRIENT_OVERRIDE ) ) ) {
+                set_components( *crafted_item, used_items, it.get_var( "BATCHCOUNT", 1 ), 0 );
+            }
+
+            const auto relative_rot = highest_component_relative_rot( used_items );
+
+            if( crafted_item->goes_bad() ) {
+                crafted_item->set_relative_rot( relative_rot );
+            }
+
+            // mirror complete_craft ammo behavior
+            // just in case someone wanted to make a gun with a multicooker...
+            if( !crafted_item->ammo_remaining() ) {
+                crafted_item->ammo_unset();
+            }
+            if( crafted_item->has_flag( flag_id( "CRAFT_WITH_FULL_MAG" ) ) ) {
+                crafted_item->ammo_set( crafted_item->ammo_default(), crafted_item->ammo_capacity() );
+            }
+
+            //finally insert our crafted item to be removed by the player later on
+            it.put_in( std::move( crafted_item ) );
             it.erase_var( "BATCHCOUNT" );
             it.erase_var( "RESULT" );
 
@@ -5983,6 +6052,10 @@ int multicooker_iuse::use( player &p, item &it, bool t, const tripoint_bub_ms &p
 
         if( mc_stop == choice ) {
             if( query_yn( _( "Really stop?" ) ) ) {
+                //if user cancels craft just dump the crafts components on the ground
+                for( detached_ptr<item> &item : it.remove_components() ) {
+                    get_map().add_item_or_charges( pos, std::move( item ) );
+                }
                 it.deactivate();
                 it.erase_var( "RESULT" );
                 it.erase_var( "COOKTIME" );
@@ -6095,8 +6168,18 @@ int multicooker_iuse::use( player &p, item &it, bool t, const tripoint_bub_ms &p
                     return 0;
                 }
 
-                for( const auto &component : reqs->get_components() ) {
-                    p.consume_items( component, batchcount, filter );
+                std::vector<detached_ptr<item>> used;
+
+                for( const std::vector<item_comp> &component : reqs->get_components() ) {
+                    std::vector<detached_ptr<item>> tmp = p.consume_items( component, batchcount, filter );
+                    used.insert( used.end(), std::make_move_iterator( tmp.begin() ),
+                                 std::make_move_iterator( tmp.end() ) );
+                }
+
+                //add recipe compontents to the multicooker, because we need to reference them later when the item is actually crafted
+                //yes this is a bit weird but its the sanest method to do this
+                for( detached_ptr<item> &item : used ) {
+                    it.add_component( std::move( item ) );
                 }
 
                 it.set_var( "RECIPE", meal->ident().str() );
@@ -8412,12 +8495,12 @@ void iuse_paint_stuff::info( const item &it, std::vector<iteminfo> &inf ) const
     }
 }
 
-void iuse_paint_stuff::on_placed( item &it, const map &, const tripoint_bub_ms & ) const
+void iuse_paint_stuff::on_placed( item &it, const tripoint_abs_ms & ) const
 {
     get_paint_color( it );
 }
 
-void iuse_paint_stuff_config::on_placed( item &it, const map &, const tripoint_bub_ms & ) const
+void iuse_paint_stuff_config::on_placed( item &it, const tripoint_abs_ms & ) const
 {
     get_paint_layer( it, false );
 }
