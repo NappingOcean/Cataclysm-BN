@@ -253,8 +253,9 @@ TEST_CASE(
         REQUIRE(mon.use_special_attack("alpha"));
         REQUIRE(mon.special_attack_budget_spent());
         const auto moves_before = mon.moves;
-        const auto dmsg =
-            capture_debugmsg_during([&]() { CHECK_FALSE(mon.use_special_attack("beta")); });
+        const auto dmsg = capture_debugmsg_during([&]() {
+            CHECK_FALSE(mon.use_special_attack("beta"));
+        });
         CHECK_THAT(dmsg, Catch::Contains("already spent this action's special attack"));
         // The refusal costs nothing: beta never ran.
         CHECK(mon.get_special_attack_cooldown("beta") == 0);
@@ -319,8 +320,8 @@ TEST_CASE("the stock scheduler holds the same reentrancy guard", "[monster][spec
         }));
     // Declining keeps the scheduler's random pick from ending the loop before alpha runs:
     // a refused actor is dropped and the loop moves on, so alpha runs in either order.
-    test_type.special_attacks.emplace(
-        "beta", mtype_special_attack("beta", [](monster*) -> bool { return false; }));
+    test_type.special_attacks
+        .emplace("beta", mtype_special_attack("beta", [](monster*) -> bool { return false; }));
     mon.type = &test_type;
     mon.set_special("alpha", 0);
     mon.set_special("beta", 0);

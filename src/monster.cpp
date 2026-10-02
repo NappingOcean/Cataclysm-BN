@@ -3273,7 +3273,8 @@ auto monster::set_special_attack_cooldown( const std::string &attack_id, int tur
     set_special( attack_id, std::max( 0, turns ) );
 }
 
-auto monster::get_special_attack_cooldown( const std::string &attack_id ) const -> std::optional<int>
+auto monster::get_special_attack_cooldown( const std::string &attack_id ) const ->
+std::optional<int>
 {
     const auto attack = special_attacks.find( attack_id );
     if( !type->special_attacks.contains( attack_id ) || attack == special_attacks.end() ) {
