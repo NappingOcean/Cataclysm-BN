@@ -148,6 +148,13 @@ void trap::load( const JsonObject &jo, const std::string & )
         looks_like = jo.get_string( "copy-from" );
     }
     jo.read( "looks_like", looks_like );
+    // Override inherited lists instead of appending to them
+    if( jo.has_array( "trigger_items" ) ) {
+        trigger_components.clear();
+    }
+    if( jo.has_array( "drops" ) ) {
+        components.clear();
+    }
     for( const JsonValue entry : jo.get_array( "trigger_items" ) ) {
         itype_id item_type;
         int quantity = 0;
