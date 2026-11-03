@@ -1,13 +1,14 @@
 #include "item_functions.h"
 
+#include <algorithm>
+
 #include "character.h"
+#include "gun_supply/gun_supply.h"
 #include "item.h"
 #include "itype.h"
 #include "units.h"
 
 static flag_id flag_NO_UNLOAD( "NO_UNLOAD" );
-
-static const itype_id itype_UPS( "UPS" );
 
 namespace item_funcs
 {
@@ -20,18 +21,19 @@ bool can_be_unloaded( const item &itm )
         return true;
     }
 
+    // Gunmods carry their own NO_UNLOAD, so a supply gunmod stays unloadable on a NO_UNLOAD gun.
+    for( const item *mod : itm.gunmods() ) {
+        if( can_be_unloaded( *mod ) ) {
+            return true;
+        }
+    }
+
     if( itm.has_flag( flag_NO_UNLOAD ) ) {
         return false;
     }
 
     if( itm.magazine_current() ) {
         return true;
-    }
-
-    for( const item *mod : itm.gunmods() ) {
-        if( can_be_unloaded( *mod ) ) {
-            return true;
-        }
     }
 
     if( itm.ammo_types().empty() ) {
@@ -48,22 +50,10 @@ int shots_remaining( const Character &who, const item &it )
         return 0;
     }
 
-    int ammo_drain = it.ammo_required();
-    int energy_drain = it.get_gun_ups_drain();
-    int power = who.charges_of( itype_UPS );
-
-    if( ammo_drain > 0 && energy_drain > 0 ) {
-        // Both UPS and ammo, lower is limiting.
-        return std::min( it.ammo_remaining() / ammo_drain, power / energy_drain );
-    } else if( energy_drain > 0 ) {
-        //Only one of the two, it is limiting.
-        return power / energy_drain;
-    } else if( ammo_drain > 0 ) {
-        return it.ammo_remaining() / ammo_drain;
-    } else {
-        // Effectively infinite ammo.
-        return item::INFINITE_CHARGES;
-    }
+    const int ammo_drain = it.ammo_required();
+    // No ammo drain means effectively infinite ammo; supply and UPS may still limit it.
+    const int by_ammo = ammo_drain > 0 ? it.ammo_remaining() / ammo_drain : item::INFINITE_CHARGES;
+    return std::min( by_ammo, gun_supply::shots_available( who, it ) );
 }
 
 } // namespace item_funcs

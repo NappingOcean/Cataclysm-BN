@@ -699,7 +699,8 @@ bool unload_item( avatar &you, item &loc )
     std::vector<item *> opts( 1, &it );
 
     for( auto e : it.gunmods() ) {
-        if( e->is_gun() && !e->has_flag( flag_NO_UNLOAD ) &&
+        // Tool gunmods are supply gunmods holding their own magazine.
+        if( ( e->is_gun() || e->is_tool() ) && !e->has_flag( flag_NO_UNLOAD ) &&
             ( e->magazine_current() || e->ammo_remaining() > 0 || e->casings_count() > 0 ) ) {
             msgs.emplace_back( e->tname() );
             opts.emplace_back( e );

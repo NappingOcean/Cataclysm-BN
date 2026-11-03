@@ -26,6 +26,7 @@
 #include "game.h"
 #include "game_constants.h"
 #include "game_inventory.h"
+#include "gun_supply/gun_supply.h"
 #include "int_id.h"
 #include "item.h"
 #include "item_contents.h"
@@ -104,7 +105,6 @@ static const efftype_id effect_pkill3( "pkill3" );
 static const efftype_id effect_ridden( "ridden" );
 static const efftype_id effect_riding( "riding" );
 
-static const itype_id itype_UPS( "UPS" );
 
 static const skill_id skill_archery( "archery" );
 static const skill_id skill_barter( "barter" );
@@ -1713,10 +1713,8 @@ void npc::decide_needs()
         elem = 20;
     }
     if( primary_weapon().is_gun() ) {
-        int ups_drain = primary_weapon().get_gun_ups_drain();
-        if( ups_drain > 0 ) {
-            int ups_charges = charges_of( itype_UPS );
-            needrank[need_ammo] = static_cast<double>( ups_charges ) / ups_drain;
+        if( !gun_supply::demands( primary_weapon() ).empty() ) {
+            needrank[need_ammo] = gun_supply::shots_available( *this, primary_weapon() );
         } else {
             needrank[need_ammo] = character_funcs::get_ammo_items(
                                       *this, ammotype( *primary_weapon().type->gun->ammo.begin() )

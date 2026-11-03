@@ -1417,6 +1417,9 @@ void Item_factory::check_definitions() const
             for( const ammotype &at : type->gun->ammo ) {
                 check_ammo_type( msg, at );
             }
+            for( const auto &secondary : type->gun->secondary_ammo ) {
+                check_ammo_type( msg, secondary.ammo );
+            }
             if( type->gun->ammo.empty() ) {
                 // if gun doesn't use ammo forbid both integral or detachable magazines
                 if( static_cast<bool>( type->gun->clip ) || !type->magazines.empty() ) {
@@ -1996,6 +1999,19 @@ void Item_factory::load( islot_gun &slot, const JsonObject &jo, const std::strin
     assign( jo, "built_in_mods", slot.built_in_mods, strict );
     assign( jo, "default_mods", slot.default_mods, strict );
     assign( jo, "ups_charges", slot.ups_charges, strict, 0 );
+    if( jo.has_array( "secondary_ammo" ) ) {
+        slot.secondary_ammo.clear();
+        for( JsonObject curr : jo.get_array( "secondary_ammo" ) ) {
+            const auto per_shot = curr.get_int( "per_shot" );
+            if( per_shot < 1 ) {
+                curr.throw_error( "per_shot must be at least 1", "per_shot" );
+            }
+            slot.secondary_ammo.push_back( {
+                .ammo = ammotype( curr.get_string( "ammo" ) ),
+                .per_shot = per_shot,
+            } );
+        }
+    }
     assign( jo, "blackpowder_tolerance", slot.blackpowder_tolerance, strict, 0 );
     assign( jo, "min_cycle_recoil", slot.min_cycle_recoil, strict, 0 );
     assign( jo, "ammo_effects", slot.ammo_effects, strict );

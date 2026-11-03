@@ -517,6 +517,12 @@ struct islot_fuel {
         ter_id pump_terrain = t_null;
 };
 
+/// Ammo a gun spends per shot from an installed supply gunmod, besides its regular ammunition.
+struct gun_secondary_ammo {
+    ammotype ammo;
+    int per_shot = 0;
+};
+
 // TODO: this shares a lot with the ammo item type, merge into a separate slot type?
 struct islot_gun : common_ranged_data {
     /**
@@ -564,6 +570,10 @@ struct islot_gun : common_ranged_data {
      * If this uses UPS charges, how many (per shoot), 0 for no UPS charges at all.
      */
     int ups_charges = 0;
+    /**
+     * Ammo spent per shot from a supply gunmod. Unlike @ref ups_charges, UPS cannot cover it.
+     */
+    std::vector<gun_secondary_ammo> secondary_ammo;
     /**
      * One in X chance for gun to require major cleanup after firing blackpowder shot.
      */

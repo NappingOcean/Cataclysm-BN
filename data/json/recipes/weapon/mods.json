@@ -1597,5 +1597,20 @@
     "qualities": [ { "id": "SAW_M_FINE", "level": 1 } ],
     "tools": [ [ [ "large_repairkit", 20 ], [ "small_repairkit", 40 ] ] ],
     "components": [ [ [ "pipe", 1 ] ], [ [ "scrap", 1 ] ] ]
+  },
+  {
+    "type": "recipe",
+    "result": "battery_supply_gunmod",
+    "category": "CC_WEAPON",
+    "subcategory": "CSC_WEAPON_MODS",
+    "skill_used": "electronics",
+    "difficulty": 3,
+    "time": "30 m",
+    "reversible": true,
+    "autolearn": true,
+    "book_learn": [ [ "manual_electronics", 2 ], [ "advanced_electronics", 2 ] ],
+    "using": [ [ "soldering_standard", 10 ] ],
+    "qualities": [ { "id": "SCREW", "level": 1 } ],
+    "components": [ [ [ "power_supply", 1 ] ], [ [ "scrap", 4 ] ], [ [ "cable", 10 ] ] ]
   }
 ]

@@ -544,7 +544,8 @@ Guns can be defined like this:
 "burst": 5,                // Number of shots fired in burst mode
 "handling": 15,            // Modifier in how quick the gun recovers from recoil. 20 is baseline, below that is worse and above is better. Scales with '2 - 2.0 => 0' by default, for example 15 handling would be '2 - 1.5 => 0.5' increase to recoil and 30 would be '2 - 3.0 => -1' reduction to recoil
 "clip_size": 100,          // Maximum amount of ammo that can be loaded
-"ups_charges": 0,          // Additionally to the normal ammo (if any), a gun can require some charges from an UPS. This also works on mods. Attaching a mod with ups_charges will add/increase ups drain on the weapon.
+"ups_charges": 0,          // Additionally to the normal ammo (if any), a gun can require some charges from an UPS. This also works on mods. Attaching a mod with ups_charges will add/increase ups drain on the weapon. An installed battery supply gunmod pays this drain before the UPS does.
+"secondary_ammo": [ { "ammo": "battery", "per_shot": 5 } ], // Optional. Ammo spent per shot from an installed supply gunmod, besides the normal ammo. Unlike ups_charges, a UPS cannot pay it, so the gun can't fire while the supply is missing or short.
 "ammo_to_fire" 1,          // Amount of ammo used per shot, separate from any UPS cost that may be given to the weapon.
 // The legacy item flags `FIRE_20`, `FIRE_50`, and `FIRE_100` are still permitted and will override `ammo_to_fire` if present.
 "reload": 450,             // Amount of time to reload, 100 = 1 second = 1 "turn". Default 100.
@@ -652,6 +653,20 @@ gunmod_data:
     "mod_targets": ...,
     ...
 }
+```
+
+A `TOOL` with `gunmod_data` is a supply gunmod. It holds its own ammo or magazine, like any tool,
+and the gun it is installed on draws per-shot `secondary_ammo` and UPS drain of the matching ammo
+type from it. By convention, supply gunmods use the `supply` location. A gun opens that slot through
+`valid_mod_locations`, and a gunmod opens it through `add_mod`.
+
+```json
+"id": "battery_supply_gunmod",
+"type": "TOOL",
+"ammo": "battery",
+"magazine_well": "500 ml",
+"magazines": [ [ "battery", [ "medium_battery_cell" ] ] ],
+"gunmod_data": { "location": "supply", "mod_target_category": [ [ "RIFLES" ] ] }
 ```
 
 ### Batteries

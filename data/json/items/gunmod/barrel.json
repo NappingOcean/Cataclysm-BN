@@ -67,6 +67,7 @@
     "loudness_modifier": 4,
     "damage_modifier": { "damage_type": "bullet", "amount": 10 },
     "ups_charges_modifier": 20,
+    "add_mod": [ [ "supply", 1 ] ],
     "min_skills": [ [ "electronics", 4 ] ]
   },
   {

@@ -50,5 +50,14 @@
     ],
     "price_postapoc": "100 USD",
     "qualities": [ [ "HAMMER", 2 ], [ "COOK", 1 ] ]
+  },
+  {
+    "id": "test_supply_only_laser",
+    "copy-from": "laser_rifle",
+    "type": "GUN",
+    "name": { "str": "TEST supply-only laser rifle" },
+    "description": "Fires only from an installed battery supply; a UPS cannot power it.",
+    "ups_charges": 0,
+    "secondary_ammo": [ { "ammo": "battery", "per_shot": 25 } ]
   }
 ]

@@ -1,6 +1,7 @@
 #include "ranged.h"
 
 #include "activity_actor_definitions.h"
+#include "ammo.h"
 #include "animation.h"
 #include "avatar.h"
 #include "ballistics.h"
@@ -31,6 +32,7 @@
 #include "game.h"
 #include "game_constants.h"
 #include "gun_mode.h"
+#include "gun_supply/gun_supply.h"
 #include "input.h"
 #include "item.h"
 #include "item_functions.h"
@@ -1329,11 +1331,8 @@ int ranged::fire_gun( Character &who, const tripoint_bub_ms &target, int max_sho
         shots = std::min( shots, ammo_left / gun.ammo_required() );
     }
 
-    // cap our maximum burst size by the amount of UPS power left
-    if( !gun.has_flag( flag_VEHICLE ) && gun.get_gun_ups_drain() > 0 ) {
-        shots = std::min( shots, ( who.charges_of( itype_UPS ) /
-                                   gun.get_gun_ups_drain() ) );
-    }
+    // cap our maximum burst size by the supply and UPS power left
+    shots = std::min( shots, gun_supply::shots_available( who, gun ) );
 
     if( shots <= 0 ) {
         debugmsg( "Attempted to fire zero or negative shots using %s", gun.tname() );
@@ -1523,8 +1522,9 @@ int ranged::fire_gun( Character &who, const tripoint_bub_ms &target, int max_sho
             break;
         }
 
-        if( !gun.has_flag( flag_VEHICLE ) ) {
-            who.use_charges( itype_UPS, gun.get_gun_ups_drain() );
+        if( !gun_supply::consume_shot( who, gun ) ) {
+            debugmsg( "Unexpected shortage of supply whilst firing %s", gun.tname() );
+            break;
         }
 
         if( aoe_attack ) {
@@ -4625,8 +4625,26 @@ auto ranged::gunmode_checks_weapon( avatar &you, const map &m, std::vector<std::
         result = false;
     }
 
-    if( gmode->get_gun_ups_drain() > 0 ) {
-        const int ups_drain = gmode->get_gun_ups_drain();
+    for( const auto &demand : gun_supply::demands( *gmode ) ) {
+        const auto stored = gun_supply::source_charges( *gmode, demand.ammo );
+        if( stored >= demand.total() ) {
+            continue;
+        }
+        if( stored < demand.strict ) {
+            if( !gun_supply::find_source( *gmode, demand.ammo ) ) {
+                //~ %1$s: weapon name, %2$s: ammo type name, e.g. "battery"
+                messages.push_back( string_format( _( "Your %1$s needs a %2$s supply installed to fire!" ),
+                                                   gmode->tname(), demand.ammo->name() ) );
+            } else {
+                //~ %1$s: weapon name, %2$d: charges per shot, %3$s: ammo type name, e.g. "battery"
+                messages.push_back( string_format( _( "Your %1$s needs %2$d charges of %3$s supply to fire!" ),
+                                                   gmode->tname(), demand.strict, demand.ammo->name() ) );
+            }
+            result = false;
+            continue;
+        }
+        // The supply is short; UPS has to cover the rest of the drain.
+        const int ups_drain = demand.total() - stored;
         const int adv_ups_drain = std::max( 1, ups_drain / 2 );
         bool is_mech_weapon = false;
         if( you.is_mounted() ) {

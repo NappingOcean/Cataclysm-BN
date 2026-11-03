@@ -181,6 +181,7 @@
       [ "sights", 1 ],
       [ "sling", 1 ],
       [ "stock", 1 ],
+      [ "supply", 1 ],
       [ "underbarrel", 1 ]
     ],
     "faults": [  ]
@@ -333,6 +334,7 @@
       [ "sights", 1 ],
       [ "sling", 1 ],
       [ "stock", 1 ],
+      [ "supply", 1 ],
       [ "underbarrel", 1 ]
     ],
     "faults": [  ]
@@ -355,6 +357,7 @@
       [ "sights", 1 ],
       [ "sling", 1 ],
       [ "stock", 1 ],
+      [ "supply", 1 ],
       [ "underbarrel", 1 ]
     ],
     "faults": [  ]

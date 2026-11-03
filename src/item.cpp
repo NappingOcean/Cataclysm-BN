@@ -39,6 +39,7 @@
 #include "game.h"
 #include "game_constants.h"
 #include "gun_mode.h"
+#include "gun_supply/gun_supply.h"
 #include "iexamine.h"
 #include "int_id.h"
 #include "inventory.h"
@@ -2756,6 +2757,20 @@ void item::gun_info( const item *mod, std::vector<iteminfo> &info, const iteminf
                                           "Uses <stat>%i</stat> charges of UPS per shot",
                                           mod->get_gun_ups_drain() ),
                                           mod->get_gun_ups_drain() ) );
+        if( gun_supply::find_source( *mod, ammo_battery ) ) {
+            info.emplace_back( "AMMO", _( "Draws from the installed battery supply before the UPS." ) );
+        }
+    }
+
+    if( mod->type->gun && parts->test( iteminfo_parts::AMMO_UPSCOST ) ) {
+        for( const auto &secondary : mod->type->gun->secondary_ammo ) {
+            //~ %1$i: charges per shot, %2$s: ammo type name, e.g. "battery"
+            info.emplace_back( "AMMO",
+                               string_format( vgettext( "Uses <stat>%1$i</stat> charge of %2$s supply per shot",
+                                              "Uses <stat>%1$i</stat> charges of %2$s supply per shot",
+                                              secondary.per_shot ),
+                                              secondary.per_shot, secondary.ammo->name() ) );
+        }
     }
 
     if( skill.ident() == skill_throw ) {

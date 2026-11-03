@@ -10,6 +10,7 @@
 #include "flag.h"
 #include "flag_trait.h"
 #include "game.h"
+#include "gun_supply/gun_supply.h"
 #include "handle_liquid.h"
 #include "itype.h"
 #include "iuse_actor.h"
@@ -74,7 +75,6 @@ static const efftype_id effect_meth( "meth" );
 static const bionic_id bio_soporific( "bio_soporific" );
 static const bionic_id bio_uncanny_dodge( "bio_uncanny_dodge" );
 
-static const itype_id itype_UPS( "UPS" );
 
 
 static const quality_id qual_SLEEP_AID( "SLEEP_AID" );
@@ -1014,9 +1014,6 @@ int ammo_count_for( const Character &who, const item &gun )
         return item::INFINITE_CHARGES;
     }
     int ammo_drain = gun.ammo_required();
-    int energy_drain = gun.get_gun_ups_drain();
-
-    units::energy power = units::from_kilojoule( who.charges_of( itype_UPS ) );
     int total_ammo = gun.ammo_remaining();
     const std::vector<item *> inv_ammo = find_ammo_items_or_mags( who, gun, true, -1 );
 
@@ -1032,18 +1029,9 @@ int ammo_count_for( const Character &who, const item &gun )
         }
     }
 
-    if( ammo_drain > 0 && energy_drain > 0 ) {
-        // Both UPS and ammo, lower is limiting.
-        return std::min( total_ammo / ammo_drain, power / units::from_kilojoule( energy_drain ) );
-    } else if( energy_drain > 0 ) {
-        //Only one of the two, it is limiting.
-        return power / units::from_kilojoule( energy_drain );
-    } else if( ammo_drain > 0 ) {
-        return total_ammo / ammo_drain;
-    } else {
-        // Effectively infinite ammo.
-        return item::INFINITE_CHARGES;
-    }
+    // No ammo drain means effectively infinite ammo; supply and UPS may still limit it.
+    const int by_ammo = ammo_drain > 0 ? total_ammo / ammo_drain : item::INFINITE_CHARGES;
+    return std::min( by_ammo, gun_supply::shots_available( who, gun ) );
 }
 
 void show_skill_capped_notice( const Character &who, const skill_id &id )
